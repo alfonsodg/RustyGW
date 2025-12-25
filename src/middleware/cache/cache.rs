@@ -3,9 +3,8 @@ use std::{sync::Arc, time::{Duration, Instant}};
 use axum::{body::Body, extract::{State}, middleware::Next, response::Response};
 use http::Request;
 use http_body_util::BodyExt;
-use tracing::info;
 
-use crate::{constants::cache as cache_constants, errors::AppError, middleware::rate_limiter::rate_limit::parse_duration, state::{AppState, CachedResponse}};
+use crate::{constants::cache as cache_constants, errors::AppError, middleware::rate_limiter::rate_limit::parse_duration, state::{AppState, CachedResponse}, utils::logging::log_cache_operation};
 
 /// Sanitize cache key to prevent cache poisoning attacks
 fn sanitize_cache_key(uri: &str) -> String {
@@ -64,18 +63,18 @@ pub async fn layer(
     //1. check if a valid response is already in the cache.
     if let Some(cached_response) = state.cache.get(&cache_key).await {
         if cached_response.inserted_at.elapsed() < ttl {
-            info!(key = %cache_key, "Cache HIT");
+            log_cache_operation("get", &cache_key, true, Some(ttl.as_secs()));
             let mut builder = Response::builder().status(cached_response.status);
             *builder.headers_mut().unwrap() = cached_response.headers.clone();
             return Ok(builder.body(Body::from(cached_response.body.clone())).unwrap());
         } else {
-            info!(key = %cache_key, "Cache STALE (expired)");
+            log_cache_operation("expired", &cache_key, false, None);
             state.cache.invalidate(&cache_key).await;
         }
         
     }
 
-    info!(key = %cache_key, "Cache MISS");
+    log_cache_operation("get", &cache_key, false, None);
 
     // 2. If not in cache, call the next middleware (and eventually the proxy handler).
     let response = next.run(req).await;

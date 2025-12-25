@@ -1,9 +1,8 @@
 use std::{sync::Arc, time::Instant};
 
 use axum::{extract::{Request, State}, middleware::Next, response::Response};
-use tracing::{info, warn};
 
-use crate::{errors::AppError, features::circuit_breaker::circuit_breaker::{State as CircuitStateEnum}, middleware::rate_limiter::rate_limit::parse_duration, state::AppState};
+use crate::{errors::AppError, features::circuit_breaker::circuit_breaker::{State as CircuitStateEnum}, middleware::rate_limiter::rate_limit::parse_duration, state::AppState, utils::logging::log_circuit_breaker_event};
 
 
 pub async fn layer(
@@ -35,19 +34,18 @@ pub async fn layer(
 
             if opened_at.elapsed() > open_duration {
                 *current_state = CircuitStateEnum::HalfOpen { consecutive_successes: 0 };
-                info!(route = %route.name, "Circuit breaker is now HALF-OPEN");
-                true // Allow request in HalfOpen state
+                log_circuit_breaker_event(&route.name, "open", "half_open", "timeout_elapsed");
+                true
             } else {
-                warn!(route = %route.name, "Circuit breaker is OPEN, rejecting request");
-                false // Reject request
+                log_circuit_breaker_event(&route.name, "open", "open", "rejecting_request");
+                false
             }
         },
         CircuitStateEnum::HalfOpen { consecutive_successes: _ } => {
-            info!(route = %route.name, "Circuit breaker is HALF-OPEN, allowing trial requests");
-            true // Allow request in HalfOpen state
+            true
         },
         CircuitStateEnum::Closed { consecutive_failures: _ } => {
-            true // Allow request in Closed state
+            true
         }
     };
 
@@ -71,7 +69,7 @@ pub async fn layer(
 
                 if failures >= cb_config.failure_threshold {
                     *current_state = CircuitStateEnum::Open { opened_at: Instant::now() };
-                    warn!(route = %route.name, "Failure threshold reached, circuit is OPENED");
+                    log_circuit_breaker_event(&route.name, "closed", "open", "failure_threshold_reached");
                 } else {
                     *current_state = CircuitStateEnum::Closed { consecutive_failures: failures };
                 }
@@ -84,13 +82,10 @@ pub async fn layer(
             CircuitStateEnum::HalfOpen { consecutive_successes } => {
                 let new_successes = consecutive_successes + 1;
                 if new_successes >= cb_config.success_threshold {
-                    // Success threshold reached, close the circuit.
                     *current_state = CircuitStateEnum::Closed { consecutive_failures: 0 };
-                    info!(route = %route.name, "Success threshold reached, circuit is now CLOSED");
+                    log_circuit_breaker_event(&route.name, "half_open", "closed", "success_threshold_reached");
                 } else {
-                    // Increment success count but remain Half-Open.
                     *current_state = CircuitStateEnum::HalfOpen { consecutive_successes: new_successes };
-                    info!(route = %route.name, successes = new_successes, "Trial request succeeded, remaining HALF-OPEN");
                 }
             }
             CircuitStateEnum::Closed { consecutive_failures } => {

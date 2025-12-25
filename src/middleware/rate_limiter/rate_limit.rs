@@ -2,9 +2,8 @@ use std::{sync::Arc, time::Duration};
 
 use axum::{extract::{Request, State}, middleware::Next, response::Response};
 use axum_client_ip::ClientIp;
-use tracing::{info, warn};
 
-use crate::{constants::time, constants::rate_limiter as rl_constants, errors::AppError, state::AppState};
+use crate::{constants::time, constants::rate_limiter as rl_constants, errors::AppError, state::AppState, utils::logging::log_rate_limit_event};
 
 
 pub async fn layer(
@@ -14,7 +13,6 @@ pub async fn layer(
     next: Next,
 ) -> Result<Response, AppError> {
     
-    info!(client_ip = ?client_ip, "Client connected");
     let config_guard = state.config.read().await;
     let route = config_guard
         .find_route_for_path(req.uri().path());
@@ -26,14 +24,13 @@ pub async fn layer(
             let capacity = rate_limit_config.requests;
             let refill_rate = rate_limit_config.requests as f64 / period.as_secs_f64();
 
-        // clinets Ip address as key to rate limiting
         let key = client_ip.to_string();
         let allowed = state.rate_limit_store
             .check_and_update(&key, capacity, refill_rate)
             .await;
         
         if !allowed {
-            warn!(ip=%key, path=%req.uri().path(),"Request rate-limited");
+            log_rate_limit_event(&key, req.uri().path(), true, capacity);
             return Err(AppError::RateLimited);
         }
       }
