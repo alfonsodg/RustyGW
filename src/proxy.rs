@@ -112,12 +112,20 @@ pub async fn proxy_handler(
     // Filter headers to prevent injection attacks
     let safe_headers = filter_safe_headers(&headers);
 
+    // Check request size limits to prevent DoS attacks
     let body_bytes: Bytes = body.collect().await
         .map_err(|e| {
         tracing::error!("Failed to read request body: {}", e);
         AppError::InternalServerError
         })?
         .to_bytes();
+
+    // Validate request size against configured limits
+    let max_size = config_guard.security.max_request_size;
+    if body_bytes.len() > max_size {
+        tracing::error!("Request size {} bytes exceeds limit {} bytes", body_bytes.len(), max_size);
+        return Err(AppError::InvalidDestination("Request too large".to_string()));
+    }
 
     let request = state.http_client
         .request(method, &destination_url)

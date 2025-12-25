@@ -31,10 +31,16 @@ pub struct IdentityConfig {
 pub struct SecurityConfig {
     #[serde(default = "default_allowed_domains")]
     pub allowed_domains: Vec<String>,
+    #[serde(default = "default_max_request_size")]
+    pub max_request_size: usize, // Maximum request size in bytes
 }
 
 fn default_allowed_domains() -> Vec<String> {
     vec!["localhost".to_string(), "127.0.0.1".to_string()]
+}
+
+fn default_max_request_size() -> usize {
+    10 * 1024 * 1024 // 10MB default
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
