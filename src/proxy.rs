@@ -4,8 +4,42 @@ use tracing::info;
 use http_body_util::BodyExt;
 use bytes::Bytes;
 use std::sync::Arc;
+use url::Url;
 
 use crate::{app::REQUEST_ID_HEADER, errors::AppError, state::AppState};
+
+/// Validate URL against allowed domains to prevent SSRF attacks
+fn validate_destination_url(url: &str, allowed_domains: &[String]) -> Result<(), AppError> {
+    let parsed_url = Url::parse(url).map_err(|_| {
+        AppError::InvalidDestination(format!("Invalid URL format: {}", url))
+    })?;
+
+    // Only allow HTTP and HTTPS protocols
+    if !matches!(parsed_url.scheme(), "http" | "https") {
+        return Err(AppError::InvalidDestination(format!(
+            "Only HTTP and HTTPS protocols allowed, got: {}",
+            parsed_url.scheme()
+        )));
+    }
+
+    // Check if the host is in the allowed domains
+    let host = parsed_url.host_str().ok_or_else(|| {
+        AppError::InvalidDestination(format!("URL missing host: {}", url))
+    })?;
+
+    let is_allowed = allowed_domains.iter().any(|allowed| {
+        host == allowed || host.ends_with(&format!(".{}", allowed))
+    });
+
+    if !is_allowed {
+        return Err(AppError::InvalidDestination(format!(
+            "Host '{}' not in allowed domains: {:?}",
+            host, allowed_domains
+        )));
+    }
+
+    Ok(())
+}
 
 #[axum::debug_handler]
 pub async fn proxy_handler(
@@ -32,6 +66,14 @@ pub async fn proxy_handler(
     let destination_path = request_path.strip_prefix(&route.path).unwrap_or("");
     
     let destination_url = format!("{}{}", route.destination, destination_path);
+
+    // Validate URL to prevent SSRF attacks
+    let allowed_domains = &config_guard.security.allowed_domains;
+    validate_destination_url(&destination_url, allowed_domains)
+        .map_err(|e| {
+            tracing::error!("SSRF protection: URL validation failed for {}: {}", destination_url, e);
+            e
+        })?;
 
     info!(destination = %destination_url, "Forwarding request to backend");
     

@@ -32,6 +32,7 @@ moka = { version = "0.12.10", features = ["future"] }
 axum-prometheus = "0.8.0"
 uuid = "1.17.0"
 tower-http ={ version="0.6.6", features = ["trace", "propagate-header"]}
+url = "2.5.2"
 
 [lib]
 name = "rustway"

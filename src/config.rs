@@ -13,6 +13,8 @@ pub struct GatewayConfig {
     #[serde(default)]
     pub observability: ObservabilityConfig,
     pub identity: IdentityConfig,
+    #[serde(default)]
+    pub security: SecurityConfig,
 }
 
 #[derive(Debug, Deserialize)]
@@ -23,6 +25,16 @@ pub struct ServerConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct IdentityConfig {
     pub api_key_store_path: String,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct SecurityConfig {
+    #[serde(default = "default_allowed_domains")]
+    pub allowed_domains: Vec<String>,
+}
+
+fn default_allowed_domains() -> Vec<String> {
+    vec!["localhost".to_string(), "127.0.0.1".to_string()]
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]

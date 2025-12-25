@@ -10,6 +10,12 @@ observability:
 identity:
   api_key_store_path: "./api_keys.yaml"
 
+security:
+  allowed_domains:
+    - "localhost"
+    - "127.0.0.1"
+    - "example.com"
+
 routes:
   # 1. A simple public route
   - name: "public_route"
