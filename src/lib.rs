@@ -1,3 +1,13 @@
+//! # Rust API Gateway
+//!
+//! A high-performance API Gateway built with Axum, featuring:
+//! - Rate limiting with token bucket algorithm
+//! - Circuit breaker pattern for fault tolerance
+//! - Response caching with configurable TTL
+//! - JWT and API key authentication
+//! - Hot configuration reload
+//! - Prometheus metrics
+
 pub mod config;
 pub mod errors;
 pub mod app;
@@ -23,10 +33,16 @@ use crate::utils::logging::*;
 use crate::{config::{ApiKeyStore, GatewayConfig, SecretsConfig}, features::{circuit_breaker::circuit_breaker::CircuitBreakerStore, rate_limiter::state::{InMemoryRateLimitState, RateLimitState}}, utils::hot_reload};
 use crate::state::{AppState, CachedResponse};
 
+/// Starts the API Gateway server with the given configuration file.
+///
+/// # Arguments
+/// * `config_path` - Path to the gateway.yaml configuration file
+///
+/// # Returns
+/// * `Result<()>` - Ok if server started successfully
 pub async fn run(
     config_path: PathBuf,
 ) -> Result<()> {
-
 
     dotenv().ok();
 

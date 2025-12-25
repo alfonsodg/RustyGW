@@ -1,3 +1,7 @@
+//! Proxy module for forwarding requests to backend services.
+//!
+//! Handles request routing, load balancing, and response forwarding.
+
 use axum::{body::Body, extract::{Path, State}, http::HeaderMap, response::Response, Extension};
 use http::{HeaderValue, Method};
 use tracing::info;
@@ -8,7 +12,11 @@ use url::Url;
 
 use crate::{app::REQUEST_ID_HEADER, errors::AppError, state::AppState, utils::logging::*};
 
-/// Select destination using load balancing strategy
+/// Selects a backend destination using round-robin load balancing.
+///
+/// # Arguments
+/// * `route` - Route configuration with destination list
+/// * `request_id` - Unique request ID for consistent hashing
 fn select_destination(route: &crate::config::RouteConfig, request_id: &str) -> Result<String, AppError> {
     let destinations = &route.destinations;
     

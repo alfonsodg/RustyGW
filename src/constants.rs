@@ -1,6 +1,8 @@
-// Application-wide constants
+//! Application-wide constants for configuration defaults.
+//!
+//! Centralizes magic numbers and default values for maintainability.
 
-/// Cache configuration
+/// Cache configuration constants
 pub mod cache {
     pub const MAX_CAPACITY: u64 = 10_000;
     pub const TTL_SECONDS: u64 = 300; // 5 minutes
