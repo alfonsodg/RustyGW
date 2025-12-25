@@ -4,7 +4,7 @@ use axum::{extract::{Request, State}, middleware::Next, response::Response};
 
 use http::Uri;
 
-use crate::{config::RouteConfig, errors::AppError, features::auth::auth::{check_roles, verify_token}, state::AppState};
+use crate::{config::{RouteConfig, ApiKeyStore}, errors::AppError, features::auth::auth::{check_roles, verify_token}, state::AppState};
 
 // axum middleware layer for authentication
 pub async fn layer (
@@ -16,12 +16,18 @@ pub async fn layer (
     let route = find_route_for_uri(&req.uri(), state.clone()).await?;
 
     if let Some(auth_config) = &route.auth {
-        let claims = {
-            // Acquire read lock on the key store for API key checks
+        // Minimize lock scope - only hold lock long enough to read data
+        let key_store_data = {
             let key_store_guard = state.key_store.read().await;
-            // Pass all necessary configs to the verification function
-            verify_token(req.headers(), auth_config, &state.secrets, &key_store_guard)?
+            // Clone only the keys HashMap to minimize lock time
+            key_store_guard.keys.clone()
         };
+        
+        // Create a temporary ApiKeyStore with the cloned data for verification
+        let temp_key_store = ApiKeyStore { keys: key_store_data };
+        
+        // Process authentication outside of lock
+        let claims = verify_token(req.headers(), auth_config, &state.secrets, &temp_key_store)?;
 
         if let Some(required_roles) = &auth_config.roles {
             check_roles(&claims.roles, required_roles)?;
