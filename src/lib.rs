@@ -99,6 +99,20 @@ pub async fn run(
         CircuitBreakerStore::new(),
     );
 
+    // Start periodic cleanup of circuit breakers to prevent memory leaks
+    let cleanup_breaker_store = circuit_breaker_store.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(600)); // Every 10 minutes
+        loop {
+            interval.tick().await;
+            cleanup_breaker_store.cleanup_expired_circuits();
+            
+            // Log memory usage for monitoring
+            let breaker_count = cleanup_breaker_store.get_active_circuits_count();
+            tracing::debug!("Active circuit breakers: {}", breaker_count);
+        }
+    });
+
     let app_state = Arc::new(AppState {
         config: config.clone(),
         secrets,
