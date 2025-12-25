@@ -166,7 +166,7 @@ pub async fn proxy_handler(
         .request(method, &destination_url)
         .headers(safe_headers)
         .body(body_bytes)
-        .timeout(crate::middleware::rate_limiter::rate_limit::parse_duration(&route.timeout)
+        .timeout(crate::utils::parse_duration(&route.timeout)
             .unwrap_or(std::time::Duration::from_secs(30)))
         .build()
         .map_err(|e|{

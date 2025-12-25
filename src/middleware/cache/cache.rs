@@ -4,7 +4,7 @@ use axum::{body::Body, extract::{State}, middleware::Next, response::Response};
 use http::Request;
 use http_body_util::BodyExt;
 
-use crate::{constants::cache as cache_constants, errors::AppError, middleware::{get_route_config, rate_limiter::rate_limit::parse_duration}, state::{AppState, CachedResponse}, utils::logging::log_cache_operation};
+use crate::{constants::cache as cache_constants, errors::AppError, middleware::get_route_config, state::{AppState, CachedResponse}, utils::{logging::log_cache_operation, parse_duration}};
 
 /// Sanitize cache key to prevent cache poisoning attacks
 fn sanitize_cache_key(uri: &str) -> String {

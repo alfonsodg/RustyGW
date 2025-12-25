@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use axum::{extract::{Request, State}, middleware::Next, response::Response};
 use axum_client_ip::ClientIp;
 
-use crate::{constants::time, constants::rate_limiter as rl_constants, errors::AppError, middleware::get_route_config, state::AppState, utils::logging::log_rate_limit_event};
+use crate::{constants::rate_limiter as rl_constants, errors::AppError, middleware::get_route_config, state::AppState, utils::{logging::log_rate_limit_event, parse_duration}};
 
 
 pub async fn layer(
@@ -34,19 +34,4 @@ pub async fn layer(
       }
     }
     Ok(next.run(req).await)
-}
-
-pub fn parse_duration(s: &str) -> Result<Duration, &'static str> {
-    let s = s.trim();
-    let unit = s.chars().last().ok_or("Empty durtion")?;
-    let value: u64 = s[..s.len()-1]
-        .parse()
-        .map_err(|_| "Invalid number in duration")?;
-
-    match  unit {
-        's' => Ok(Duration::from_secs(value)),
-        'm' => Ok(Duration::from_secs(value * time::SECONDS_PER_MINUTE)),
-        'h' => Ok(Duration::from_secs(value * time::SECONDS_PER_HOUR)),
-        _ => Err("Invalid duration unit")
-    }
 }

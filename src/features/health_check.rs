@@ -6,7 +6,7 @@ use reqwest::Client;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
-use crate::{config::GatewayConfig, middleware::rate_limiter::rate_limit::parse_duration};
+use crate::{config::GatewayConfig, utils::parse_duration};
 
 /// Health status of a backend destination
 #[derive(Debug, Clone, Copy, PartialEq)]

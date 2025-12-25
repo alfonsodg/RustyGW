@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Instant};
 
 use axum::{extract::{Request, State}, middleware::Next, response::Response};
 
-use crate::{errors::AppError, features::circuit_breaker::circuit_breaker::{State as CircuitStateEnum}, middleware::{get_route_config, rate_limiter::rate_limit::parse_duration}, state::AppState, utils::logging::log_circuit_breaker_event};
+use crate::{errors::AppError, features::circuit_breaker::circuit_breaker::{State as CircuitStateEnum}, middleware::get_route_config, state::AppState, utils::{logging::log_circuit_breaker_event, parse_duration}};
 
 
 pub async fn layer(
