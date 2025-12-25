@@ -16,7 +16,7 @@ use dotenvy::dotenv;
 use moka::future::Cache;
 use reqwest::Client;
 use tokio::{net::TcpListener, sync::RwLock};
-use tracing::{info, Level};
+use tracing::{info, error, Level};
 
 use crate::{config::{ApiKeyStore, GatewayConfig, SecretsConfig}, features::{circuit_breaker::circuit_breaker::CircuitBreakerStore, rate_limiter::state::{InMemoryRateLimitState, RateLimitState}}, utils::hot_reload};
 use crate::state::{AppState, CachedResponse};
@@ -82,11 +82,22 @@ pub async fn run(
     });
 
     // start hot reloader
-    tokio::spawn(hot_reload::watch_config_files(
-        config_path,
-        config.clone(),
-        key_store.clone(), // Clone for the watcher task
-    ));
+    let config_for_spawn = config.clone();
+    let key_store_for_spawn = key_store.clone();
+    tokio::spawn(async move {
+        match hot_reload::watch_config_files(
+            config_path,
+            config_for_spawn,
+            key_store_for_spawn, // Clone for the watcher task
+        ).await {
+            Ok(_) => info!("Hot reload watcher started successfully"),
+            Err(e) => {
+                error!("Hot reload watcher failed to start: {}. Configuration changes will not be automatically reloaded.", e);
+                // We don't return the error here because we want the server to continue running
+                // even if hot reload fails
+            }
+        }
+    });
 
     let mut app = app::create_app(app_state)?;
 

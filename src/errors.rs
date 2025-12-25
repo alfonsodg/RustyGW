@@ -1,5 +1,6 @@
 use axum::{http::StatusCode, response::{IntoResponse, Response}};
 use reqwest::Error;
+use std::fmt;
 
 #[derive(Debug)]
 pub enum AppError {
@@ -18,6 +19,9 @@ pub enum AppError {
     ProxyError(Error),
     InvalidDestination(String),
     InternalServerError,
+    
+    // Hot reload errors
+    HotReloadError(String),
 }
 
 impl IntoResponse for AppError {
@@ -54,6 +58,13 @@ impl IntoResponse for AppError {
                     "Service Unavailable".to_string()
                 )
             }
+            AppError::HotReloadError(msg) => {
+                tracing::error!("Hot reload error: {}", msg);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Configuration reload failed".to_string(),
+                )
+            }
         };
 
         (status, error_message).into_response()
@@ -63,5 +74,24 @@ impl IntoResponse for AppError {
 impl From<reqwest::Error> for AppError {
     fn from(error: reqwest::Error) -> Self {
         AppError::ProxyError(error)
+    }
+}
+
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AppError::RateLimited => write!(f, "Rate limited"),
+            AppError::ServiceUnavailable => write!(f, "Service unavailable"),
+            AppError::AuthFailed(reason) => write!(f, "Authentication failed: {}", reason),
+            AppError::MissingAuthToken => write!(f, "Missing authorization token"),
+            AppError::InvalidAuthHeader => write!(f, "Invalid authorization header"),
+            AppError::InsufficientPermissions => write!(f, "Insufficient permissions"),
+            AppError::TokenExpired => write!(f, "Token expired"),
+            AppError::RouteNotFound => write!(f, "Route not found"),
+            AppError::ProxyError(_) => write!(f, "Proxy error"),
+            AppError::InvalidDestination(url) => write!(f, "Invalid destination: {}", url),
+            AppError::InternalServerError => write!(f, "Internal server error"),
+            AppError::HotReloadError(msg) => write!(f, "Hot reload error: {}", msg),
+        }
     }
 }
