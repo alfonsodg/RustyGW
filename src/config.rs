@@ -94,12 +94,33 @@ pub struct RouteConfig {
     pub load_balancing: LoadBalancingConfig,
     #[serde(default)]
     pub health_check: Option<HealthCheckConfig>,
-    /// Request timeout for backend calls (e.g., "30s")
     #[serde(default = "default_request_timeout")]
     pub timeout: String,
+    #[serde(default)]
+    pub transform: Option<TransformConfig>,
 }
 
 fn default_request_timeout() -> String { "30s".to_string() }
+
+/// Request/Response transformation configuration
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct TransformConfig {
+    #[serde(default)]
+    pub request_headers: HeaderTransform,
+    #[serde(default)]
+    pub response_headers: HeaderTransform,
+}
+
+/// Header transformation rules
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct HeaderTransform {
+    /// Headers to add (key -> value)
+    #[serde(default)]
+    pub add: std::collections::HashMap<String, String>,
+    /// Headers to remove
+    #[serde(default)]
+    pub remove: Vec<String>,
+}
 
 /// Health check configuration for backend services
 #[derive(Debug, Deserialize, Clone)]

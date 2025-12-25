@@ -12,6 +12,7 @@ pub mod rate_limiter;
 pub mod cache;
 pub mod request_id;
 pub mod circuit_breaker;
+pub mod transform;
 
 use std::sync::Arc;
 use crate::{config::RouteConfig, state::AppState};
