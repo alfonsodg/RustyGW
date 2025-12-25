@@ -23,11 +23,10 @@ impl Plugin for HeaderInjectorPlugin {
 
     async fn on_response(&self, mut response: Response<Body>, _ctx: &PluginContext) -> PluginResult<Response<Body>> {
         for (key, value) in &self.headers {
-            if let Ok(hv) = HeaderValue::from_str(value) {
-                if let Ok(hn) = http::header::HeaderName::try_from(key.as_str()) {
+            if let Ok(hv) = HeaderValue::from_str(value)
+                && let Ok(hn) = http::header::HeaderName::try_from(key.as_str()) {
                     response.headers_mut().insert(hn, hv);
                 }
-            }
         }
         debug!("HeaderInjectorPlugin: added {} headers", self.headers.len());
         Ok(response)

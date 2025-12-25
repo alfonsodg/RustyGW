@@ -39,10 +39,10 @@ pub async fn layer(
                 return Err(AppError::ServiceUnavailable);
             }
         },
-        CircuitStateEnum::HalfOpen { consecutive_successes } => {
+        CircuitStateEnum::HalfOpen { consecutive_successes: _ } => {
             info!(route = %route.name, "Circuit breaker is HALF-OPEN, allowing trial requests");
         },
-        CircuitStateEnum::Closed { consecutive_failures } => {}
+        CircuitStateEnum::Closed { consecutive_failures: _ } => {}
     }
     drop(current_state);
 

@@ -3,7 +3,7 @@ use futures::future::join_all;
 use rustway::run;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde_json::{json, Value};
-use std::process::{Child, Command};
+use std::process::Command;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::time::sleep;
 
@@ -58,7 +58,7 @@ async fn test_all_gateway_features() -> Result<()> {
     // --- 3. RATE LIMITING TEST ---
     println!("\n--- TESTING: Rate Limiting (3 req/min) ---");
     let mut tasks = Vec::new();
-    for i in 0..4 {
+    for _i in 0..4 {
         let client = client.clone();
         tasks.push(tokio::spawn(async move {
             client.get(format!("{}/test/ratelimit", base_url)).send().await

@@ -3,7 +3,6 @@ use std::{collections::HashMap, fs, path::Path, sync::Arc};
 use anyhow::{Error, Ok};
 use serde::{Deserialize};
 
-use crate::features::circuit_breaker::circuit_breaker::CircuitBreakerStore;
 
 
 #[derive(Debug, Deserialize)]

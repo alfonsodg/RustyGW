@@ -39,7 +39,7 @@ pub fn create_app(state: Arc<AppState>) -> Result<Router,Error> {
                     .headers()
                     .get(REQUEST_ID_HEADER)
                     .and_then(|value| value.to_str().ok())
-                    .unwrap_or_else(|| uuid.as_str());
+                    .unwrap_or(uuid.as_str());
 
             tracing::error_span!(
                     "request",

@@ -19,6 +19,12 @@ pub struct CircuitBreakerStore  {
     curcuits: DashMap<String, Arc<CircuitState>>,
 }
 
+impl Default for CircuitBreakerStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CircuitBreakerStore {
     pub fn new() -> Self {
         Self {

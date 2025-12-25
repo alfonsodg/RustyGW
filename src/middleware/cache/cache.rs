@@ -17,7 +17,7 @@ pub async fn layer(
 
     let route = config_guard.find_route_for_path(req.uri().path());
 
-    let cache_config = match route.and_then(|r| r.cache.as_ref().map(|c| c.clone())) {
+    let cache_config = match route.and_then(|r| r.cache.clone()) {
         Some(c) => c,
         None => return Ok(next.run(req).await),
     };
@@ -27,7 +27,7 @@ pub async fn layer(
     }
 
     let cache_key = req.uri().to_string();
-    let ttl = parse_duration(&cache_config.ttl).unwrap_or_else(|_| Duration::MAX); // item will be explicitly removed by cache algo
+    let ttl = parse_duration(&cache_config.ttl).unwrap_or(Duration::MAX); // item will be explicitly removed by cache algo
 
 
     //1. check if a valid response is already in the cache.

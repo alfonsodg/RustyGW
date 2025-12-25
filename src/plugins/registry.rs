@@ -8,6 +8,12 @@ pub struct PluginRegistry {
     plugins: RwLock<Vec<BoxedPlugin>>,
 }
 
+impl Default for PluginRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PluginRegistry {
     pub fn new() -> Self {
         Self { plugins: RwLock::new(Vec::new()) }

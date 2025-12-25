@@ -19,8 +19,8 @@ pub async fn layer(
     let route = config_guard
         .find_route_for_path(req.uri().path());
 
-    if let Some(route_config) = route {
-        if let Some(rate_limit_config) = route_config.rate_limit.as_ref() {
+    if let Some(route_config) = route
+        && let Some(rate_limit_config) = route_config.rate_limit.as_ref() {
             let period = parse_duration(&rate_limit_config.period)
                 .unwrap_or_else(|_| Duration::from_secs(60));
             let capacity = rate_limit_config.requests;
@@ -37,7 +37,6 @@ pub async fn layer(
             return Err(AppError::RateLimited);
         }
       }
-    }
     Ok(next.run(req).await)
 }
 

@@ -1,6 +1,6 @@
 // Watches the main config and API key files for changes and reloads them
 
-use std::{any, fs, path::PathBuf, sync::Arc};
+use std::{fs, path::PathBuf, sync::Arc};
 
 use notify::{ Event, RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::sync::{mpsc, RwLock};
@@ -47,11 +47,10 @@ pub async fn watch_config_files(
 
     let mut watcher: RecommendedWatcher = 
         match Watcher::new(move |res:Result<Event, notify::Error>| {
-            if let Ok(event) = res {
-                if event.kind.is_modify() || event.kind.is_create() {
+            if let Ok(event) = res
+                && (event.kind.is_modify() || event.kind.is_create()) {
                     tx.blocking_send(event).expect("Failed to send file change event");
                 }
-            }
         }, notify::Config::default()
     ) {
         Ok(w) => w,

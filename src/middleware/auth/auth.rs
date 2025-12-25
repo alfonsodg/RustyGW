@@ -13,7 +13,7 @@ pub async fn layer (
     next: Next
 ) -> Result<Response, AppError> 
 {
-    let route = find_route_for_uri(&req.uri(), state.clone()).await?;
+    let route = find_route_for_uri(req.uri(), state.clone()).await?;
 
     if let Some(auth_config) = &route.auth {
         let claims = {

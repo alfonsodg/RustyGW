@@ -18,6 +18,12 @@ pub struct InMemoryRateLimitState {
     clients: DashMap<String, Arc<RwLock<Bucket>>>,
 }
 
+impl Default for InMemoryRateLimitState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InMemoryRateLimitState {
     pub fn new() -> Self {
         Self {
