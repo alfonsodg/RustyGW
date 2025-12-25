@@ -53,7 +53,7 @@ pub fn check_roles(user_roles: &[String], required_roles: &[String]) -> Result<(
 // ------- Private Helper Functions  -----
 
 fn verify_jwt(token: &str, secrets: &SecretsConfig) -> Result<Claims, AppError> {
-    info!(token);
+    info!(token = "***"); // Mask token to prevent exposure in logs
     let key = DecodingKey::from_secret(secrets.jwt_secret.as_ref());
     let validation = Validation::new(jsonwebtoken::Algorithm::HS256);
     decode::<Claims>(token, &key, &validation)
