@@ -4,6 +4,7 @@ use std::time::Duration;
 use dashmap::DashMap;
 use tokio::sync::RwLock;
 
+use crate::constants::circuit_breaker as cb_constants;
 
 #[derive(Debug, Clone)]
 pub enum State { 
@@ -24,7 +25,7 @@ pub struct CircuitBreakerStore  {
 
 impl CircuitBreakerStore {
     pub fn new() -> Self {
-        Self::with_ttl(3600) // 1 hour default TTL
+        Self::with_ttl(cb_constants::DEFAULT_TTL_SECONDS)
     }
     
     pub fn with_ttl(ttl_seconds: u64) -> Self {

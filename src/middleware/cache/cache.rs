@@ -5,7 +5,7 @@ use http::Request;
 use http_body_util::BodyExt;
 use tracing::info;
 
-use crate::{errors::AppError, middleware::rate_limiter::rate_limit::parse_duration, state::{AppState, CachedResponse}};
+use crate::{constants::cache as cache_constants, errors::AppError, middleware::rate_limiter::rate_limit::parse_duration, state::{AppState, CachedResponse}};
 
 /// Sanitize cache key to prevent cache poisoning attacks
 fn sanitize_cache_key(uri: &str) -> String {
@@ -31,8 +31,8 @@ fn sanitize_cache_key(uri: &str) -> String {
         .collect::<String>();
     
     // Limit length to prevent excessive memory usage
-    if sanitized.len() > 512 {
-        format!("{}_truncated", &sanitized[..508])
+    if sanitized.len() > cache_constants::MAX_KEY_LENGTH {
+        format!("{}_truncated", &sanitized[..cache_constants::TRUNCATED_KEY_LENGTH])
     } else {
         sanitized
     }

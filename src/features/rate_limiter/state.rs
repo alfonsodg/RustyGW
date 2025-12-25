@@ -5,6 +5,8 @@ use dashmap::DashMap;
 use tokio::sync::RwLock;
 use tokio::time::Instant;
 
+use crate::constants::rate_limiter as rl_constants;
+
 #[async_trait]
 pub trait RateLimitState: Send + Sync {
     async fn check_and_update(&self, key: &str, capacity: u64, refill_rate: f64) -> bool;
@@ -27,7 +29,7 @@ pub struct InMemoryRateLimitState {
 
 impl InMemoryRateLimitState {
     pub fn new() -> Self {
-        Self::with_ttl(3600) // 1 hour default TTL
+        Self::with_ttl(rl_constants::DEFAULT_TTL_SECONDS)
     }
     
     pub fn with_ttl(ttl_seconds: u64) -> Self {

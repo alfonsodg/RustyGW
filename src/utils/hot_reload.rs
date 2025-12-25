@@ -153,7 +153,7 @@ pub async fn watch_config_files(
     let gateway_config_clone = gateway_config.clone();
     let api_key_store_clone = api_key_store.clone();
 
-    let (tx, mut rx) = mpsc::channel(32); // Increased channel size
+    let (tx, mut rx) = mpsc::channel(crate::constants::hot_reload::CHANNEL_BUFFER_SIZE);
 
     // Set up the watcher callback
     let watcher_tx = tx.clone();

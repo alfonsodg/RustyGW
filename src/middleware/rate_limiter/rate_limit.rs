@@ -4,7 +4,7 @@ use axum::{extract::{Request, State}, middleware::Next, response::Response};
 use axum_client_ip::ClientIp;
 use tracing::{info, warn};
 
-use crate::{errors::AppError, state::AppState};
+use crate::{constants::time, constants::rate_limiter as rl_constants, errors::AppError, state::AppState};
 
 
 pub async fn layer(
@@ -22,7 +22,7 @@ pub async fn layer(
     if let Some(route_config) = route {
         if let Some(rate_limit_config) = route_config.rate_limit.as_ref() {
             let period = parse_duration(&rate_limit_config.period)
-                .unwrap_or_else(|_| Duration::from_secs(60));
+                .unwrap_or_else(|_| Duration::from_secs(rl_constants::DEFAULT_PERIOD_SECONDS));
             let capacity = rate_limit_config.requests;
             let refill_rate = rate_limit_config.requests as f64 / period.as_secs_f64();
 
@@ -50,8 +50,8 @@ pub fn parse_duration(s: &str) -> Result<Duration, &'static str> {
 
     match  unit {
         's' => Ok(Duration::from_secs(value)),
-        'm' => Ok(Duration::from_secs(value * 60)),
-        'h' => Ok(Duration::from_secs(value*3600)),
+        'm' => Ok(Duration::from_secs(value * time::SECONDS_PER_MINUTE)),
+        'h' => Ok(Duration::from_secs(value * time::SECONDS_PER_HOUR)),
         _ => Err("Invalid duration unit")
     }
 }

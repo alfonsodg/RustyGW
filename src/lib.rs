@@ -6,6 +6,7 @@ pub mod proxy;
 pub mod middleware;
 pub mod features;
 pub mod utils;
+pub mod constants;
 
 
 use std::{net::SocketAddr, path::PathBuf, sync::Arc,};
@@ -49,22 +50,23 @@ pub async fn run(
 
     let key_store = Arc::new(RwLock::new(ApiKeyStore::load(&key_store_path)?));
 
-    let cache: Arc<Cache<String, Arc<CachedResponse>>> = Arc::new(
+    use crate::constants::{cache, monitoring};
+    
+    let response_cache: Arc<Cache<String, Arc<CachedResponse>>> = Arc::new(
         Cache::builder()
-            .max_capacity(10_000) // Maximum entries
-            .time_to_live(std::time::Duration::from_secs(300)) // 5 minute TTL
-            .time_to_idle(std::time::Duration::from_secs(180)) // 3 minute idle timeout
+            .max_capacity(cache::MAX_CAPACITY)
+            .time_to_live(std::time::Duration::from_secs(cache::TTL_SECONDS))
+            .time_to_idle(std::time::Duration::from_secs(cache::IDLE_TIMEOUT_SECONDS))
             .build(),
     );
 
     // Add cache monitoring to track eviction effectiveness
-    let cache_clone = cache.clone();
+    let cache_clone = response_cache.clone();
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60)); // Every minute
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(monitoring::METRICS_INTERVAL_SECONDS));
         loop {
             interval.tick().await;
-            let cache_size = cache_clone.weighted_size();
-            // Use iter_count() to get number of entries
+            let _cache_size = cache_clone.weighted_size();
             let cache_entries = cache_clone.iter().count();
             log_performance_metric("cache_entries", cache_entries as f64, "count", "monitoring");
         }
@@ -75,7 +77,7 @@ pub async fn run(
     // Start periodic cleanup of rate limit buckets to prevent memory leaks
     let cleanup_store = rate_limit_store.clone();
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(300)); // Every 5 minutes
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(cache::TTL_SECONDS));
         loop {
             interval.tick().await;
             cleanup_store.cleanup_expired_buckets();
@@ -120,7 +122,7 @@ pub async fn run(
         secrets,
         key_store: key_store.clone(),
         rate_limit_store: rate_limit_store,
-        cache: cache,
+        cache: response_cache,
         http_client: Client::new(),
         prometheus_handle,
         circuit_breaker_store,
