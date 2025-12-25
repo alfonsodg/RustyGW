@@ -94,7 +94,12 @@ pub struct RouteConfig {
     pub load_balancing: LoadBalancingConfig,
     #[serde(default)]
     pub health_check: Option<HealthCheckConfig>,
+    /// Request timeout for backend calls (e.g., "30s")
+    #[serde(default = "default_request_timeout")]
+    pub timeout: String,
 }
+
+fn default_request_timeout() -> String { "30s".to_string() }
 
 /// Health check configuration for backend services
 #[derive(Debug, Deserialize, Clone)]

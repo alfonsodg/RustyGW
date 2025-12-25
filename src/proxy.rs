@@ -164,8 +164,10 @@ pub async fn proxy_handler(
 
     let request = state.http_client
         .request(method, &destination_url)
-        .headers(safe_headers) // Use filtered headers only
+        .headers(safe_headers)
         .body(body_bytes)
+        .timeout(crate::middleware::rate_limiter::rate_limit::parse_duration(&route.timeout)
+            .unwrap_or(std::time::Duration::from_secs(30)))
         .build()
         .map_err(|e|{
             log_error(&e, "request_building", "reqwest_build_error");
