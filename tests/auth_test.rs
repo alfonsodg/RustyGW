@@ -26,7 +26,7 @@ server:
 routes:
   - name: "test_route"
     path: "/api/test"
-    destination: "http://localhost:8081"
+    destination: "http://localhost:8094"
 identity:
   api_key_store_path: "./api_keys.yaml"
 "#;

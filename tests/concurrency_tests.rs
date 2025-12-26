@@ -191,6 +191,7 @@ async fn test_timeout_handling() {
 async fn test_concurrent_token_bucket() {
     struct TokenBucket {
         tokens: AtomicU64,
+        #[allow(dead_code)]
         capacity: u64,
     }
 
