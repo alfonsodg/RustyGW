@@ -2,6 +2,8 @@
 
 A high-performance, lightweight API Gateway built in Rust. Perfect for microservices, serverless architectures, and modern cloud-native applications.
 
+> **Note**: This project is a fork and enhancement of [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway) by [@Ketankhunti](https://github.com/Ketankhunti). We've added significant improvements including WebSocket support, enhanced security, Docker Swarm compatibility, and a complete demo application.
+
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.92+-orange.svg)](https://www.rust-lang.org)
 [![Release](https://img.shields.io/github/v/release/alfonsodg/RustyGW)](https://github.com/alfonsodg/RustyGW/releases)
@@ -137,6 +139,21 @@ docker-compose up
 # Access: http://localhost:8094
 ```
 
+### Docker Swarm (Production Cluster)
+```bash
+# Initialize swarm (if not already done)
+docker swarm init
+
+# Deploy stack
+docker stack deploy -c docker-compose.swarm.yml rustygw
+
+# Scale services
+docker service scale rustygw_gateway=5
+
+# Check status
+docker stack services rustygw
+```
+
 ### Kubernetes Deployment
 ```yaml
 apiVersion: apps/v1
@@ -267,6 +284,7 @@ cargo bench
 ### Deployment Options
 - **Binary**: Single executable, no dependencies
 - **Docker**: Container-ready with health checks
+- **Docker Swarm**: Multi-node cluster deployment
 - **Kubernetes**: Cloud-native with scaling
 - **Serverless**: AWS Lambda compatible
 
@@ -292,6 +310,22 @@ cargo bench
 - Add tests for new features
 - Update documentation
 - Run `cargo fmt` and `cargo clippy`
+
+---
+
+## 🙏 Acknowledgments
+
+This project is built upon the excellent foundation of [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway) by [@Ketankhunti](https://github.com/Ketankhunti). We've extended it with:
+
+- WebSocket support and real-time features
+- Enhanced security and authentication
+- Docker Swarm compatibility
+- Complete demo application with frontend
+- Comprehensive testing suite
+- Production-ready monitoring and observability
+- Performance optimizations and benchmarks
+
+Special thanks to the original author for creating the solid foundation that made this enhanced version possible.
 
 ---
 

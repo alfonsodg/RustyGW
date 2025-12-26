@@ -1,0 +1,155 @@
+version: '3.8'
+
+services:
+  gateway:
+    image: rustygw:latest
+    ports:
+      - "8094:8094"
+    volumes:
+      - ./gateway.yaml:/app/gateway.yaml:ro
+      - ./api_keys.yaml:/app/api_keys.yaml:ro
+    environment:
+      - RUST_LOG=info
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8094/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+      placement:
+        constraints:
+          - node.role == worker
+    networks:
+      - rustygw-network
+
+  users-service:
+    image: python:3.13-slim
+    ports:
+      - "8091:8091"
+    volumes:
+      - ./demo/backend-users:/app:ro
+    working_dir: /app
+    command: >
+      sh -c "pip install -r requirements.txt && python main.py"
+    environment:
+      - PORT=8091
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8091/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    networks:
+      - rustygw-network
+
+  products-service:
+    image: python:3.13-slim
+    ports:
+      - "8092:8092"
+    volumes:
+      - ./demo/backend-products:/app:ro
+    working_dir: /app
+    command: >
+      sh -c "pip install -r requirements.txt && python main.py"
+    environment:
+      - PORT=8092
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    networks:
+      - rustygw-network
+
+  orders-service:
+    image: python:3.13-slim
+    ports:
+      - "8093:8093"
+    volumes:
+      - ./demo/backend-orders:/app:ro
+    working_dir: /app
+    command: >
+      sh -c "pip install -r requirements.txt && python main.py"
+    environment:
+      - PORT=8093
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8093/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    networks:
+      - rustygw-network
+
+  frontend:
+    image: python:3.13-slim
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./demo/frontend:/app:ro
+    working_dir: /app
+    command: python -m http.server 8090
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+    networks:
+      - rustygw-network
+
+networks:
+  rustygw-network:
+    driver: overlay
+    attachable: true
