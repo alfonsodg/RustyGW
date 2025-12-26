@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Gateway Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .service { border: 1px solid #ccc; margin: 10px 0; padding: 15px; }
+        .data { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+        .status { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>API Gateway Demo - WebSocket</h1>
+    
+    <div class="service">
+        <h2>Users Service</h2>
+        <div id="users-status" class="status">Connecting...</div>
+        <div id="users-data" class="data"></div>
+    </div>
+    
+    <div class="service">
+        <h2>Products Service</h2>
+        <div id="products-status" class="status">Connecting...</div>
+        <div id="products-data" class="data"></div>
+    </div>
+    
+    <div class="service">
+        <h2>Orders Service</h2>
+        <div id="orders-status" class="status">Connecting...</div>
+        <div id="orders-data" class="data"></div>
+    </div>
+
+    <script>
+        function connectWebSocket(service, port) {
+            const ws = new WebSocket(`ws://localhost:${port}/ws`);
+            const statusEl = document.getElementById(`${service}-status`);
+            const dataEl = document.getElementById(`${service}-data`);
+            
+            ws.onopen = () => {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status';
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                dataEl.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            };
+            
+            ws.onerror = () => {
+                statusEl.textContent = 'Error';
+                statusEl.className = 'error';
+            };
+            
+            ws.onclose = () => {
+                statusEl.textContent = 'Disconnected';
+                statusEl.className = 'error';
+            };
+        }
+        
+        connectWebSocket('users', 8094);
+        connectWebSocket('products', 8094);
+        connectWebSocket('orders', 8094);
+    </script>
+</body>
+</html>
