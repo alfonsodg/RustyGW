@@ -1,57 +1,60 @@
 
 server:
-  addr: "127.0.0.1:8081" # Use a dedicated port for testing
+  addr: "127.0.0.1:8094"
 
 observability:
   metrics:
     enabled: true
-    auth_required: false # Disabled for easier testing in CI
+    auth_required: false
 
 identity:
   api_key_store_path: "./api_keys.yaml"
 
 routes:
-  # 1. A simple public route
-  - name: "public_route"
-    path: "/test/public"
-    destination: "http://127.0.0.1:8000/public"
-
-  # 2. A route for testing API Key auth
-  - name: "apikey_route"
-    path: "/test/apikey"
-    destination: "http://127.0.0.1:8000/private"
-    auth:
-      type: "ApiKey"
-      roles: ["user"]
-
-  # 3. A route for testing JWT auth
-  - name: "jwt_route"
-    path: "/test/jwt"
-    destination: "http://127.0.0.1:8000/private"
-    auth:
-      type: "Jwt"
-      roles: ["admin"]
-
-  # 4. A route for testing rate limiting
-  - name: "ratelimit_route"
-    path: "/test/ratelimit"
-    destination: "http://127.0.0.1:8000/public"
-    rate_limit:
-      requests: 3
-      period: "1m"
-
-  # 5. A route for testing caching
-  - name: "cache_route"
-    path: "/test/cache"
-    destination: "http://127.0.0.1:8000/cacheable"
-    cache:
-      ttl: "5s" # Short TTL for easy testing
-
-  # 6. A route for testing the circuit breaker
-  - name: "circuitbreaker_route"
-    path: "/test/breaker"
-    destination: "http://127.0.0.1:8000/failing"
-    circuit_breaker:
-      failure_threshold: 2
-      success_threshold: 2
-      open_duration: "5s" # Short duration for easy testing
+  # Frontend route
+  - name: "frontend"
+    path: "/"
+    destination: "http://127.0.0.1:8090"
+    
+  # Users service routes
+  - name: "users_list"
+    path: "/api/users"
+    destination: "http://127.0.0.1:8091/users"
+    
+  - name: "users_by_id"
+    path: "/api/users/{id}"
+    destination: "http://127.0.0.1:8091/users/{id}"
+    
+  - name: "users_by_role"
+    path: "/api/users/role/{role}"
+    destination: "http://127.0.0.1:8091/users/role/{role}"
+    
+  # Products service routes
+  - name: "products_list"
+    path: "/api/products"
+    destination: "http://127.0.0.1:8092/products"
+    
+  - name: "products_by_id"
+    path: "/api/products/{id}"
+    destination: "http://127.0.0.1:8092/products/{id}"
+    
+  - name: "products_by_category"
+    path: "/api/products/category/{category}"
+    destination: "http://127.0.0.1:8092/products/category/{category}"
+    
+  # Orders service routes
+  - name: "orders_list"
+    path: "/api/orders"
+    destination: "http://127.0.0.1:8093/orders"
+    
+  - name: "orders_by_id"
+    path: "/api/orders/{id}"
+    destination: "http://127.0.0.1:8093/orders/{id}"
+    
+  - name: "orders_by_user"
+    path: "/api/orders/user/{user_id}"
+    destination: "http://127.0.0.1:8093/orders/user/{user_id}"
+    
+  - name: "orders_by_status"
+    path: "/api/orders/status/{status}"
+    destination: "http://127.0.0.1:8093/orders/status/{status}"
