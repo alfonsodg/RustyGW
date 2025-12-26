@@ -92,20 +92,122 @@ keys:
 
 ## 🏗️ Architecture
 
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        C1[Web Browser]
+        C2[Mobile App]
+        C3[API Client]
+    end
+    
+    subgraph "RustyGW Gateway"
+        GW[RustyGW<br/>Port 8094]
+        
+        subgraph "Middleware Stack"
+            AUTH[Authentication<br/>JWT/API Keys]
+            RATE[Rate Limiting<br/>Token Bucket]
+            CACHE[Response Cache<br/>TTL Based]
+            CB[Circuit Breaker<br/>Fault Tolerance]
+            METRICS[Metrics<br/>Prometheus]
+        end
+    end
+    
+    subgraph "Backend Services"
+        U[Users Service<br/>Port 8091]
+        P[Products Service<br/>Port 8092]
+        O[Orders Service<br/>Port 8093]
+    end
+    
+    subgraph "Frontend"
+        F[Demo Frontend<br/>Port 8090<br/>WebSocket UI]
+    end
+    
+    subgraph "Monitoring"
+        PROM[Prometheus<br/>Metrics Collection]
+        GRAF[Grafana<br/>Dashboards]
+    end
+    
+    C1 --> GW
+    C2 --> GW
+    C3 --> GW
+    
+    GW --> AUTH
+    AUTH --> RATE
+    RATE --> CACHE
+    CACHE --> CB
+    CB --> METRICS
+    
+    GW --> U
+    GW --> P
+    GW --> O
+    GW --> F
+    
+    METRICS --> PROM
+    PROM --> GRAF
+    
+    style GW fill:#ff6b6b
+    style AUTH fill:#4ecdc4
+    style RATE fill:#45b7d1
+    style CACHE fill:#96ceb4
+    style CB fill:#feca57
+    style METRICS fill:#ff9ff3
 ```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Client    │───▶│   RustyGW   │───▶│  Backend    │
-│             │    │             │    │  Services   │
-└─────────────┘    └─────────────┘    └─────────────┘
-                          │
-                          ▼
-                   ┌─────────────┐
-                   │ Middleware  │
-                   │ • Auth      │
-                   │ • Rate Limit│
-                   │ • Caching   │
-                   │ • Metrics   │
-                   └─────────────┘
+
+### Docker Swarm Architecture
+
+```mermaid
+graph TB
+    subgraph "Docker Swarm Cluster"
+        subgraph "Manager Node"
+            M[Swarm Manager<br/>Orchestration]
+        end
+        
+        subgraph "Worker Node 1"
+            GW1[RustyGW Replica 1]
+            U1[Users Service 1]
+            F1[Frontend 1]
+        end
+        
+        subgraph "Worker Node 2"
+            GW2[RustyGW Replica 2]
+            P1[Products Service 1]
+            O1[Orders Service 1]
+        end
+        
+        subgraph "Worker Node 3"
+            GW3[RustyGW Replica 3]
+            U2[Users Service 2]
+            P2[Products Service 2]
+        end
+        
+        subgraph "Overlay Network"
+            NET[rustygw-network<br/>Service Discovery]
+        end
+    end
+    
+    LB[Load Balancer<br/>Port 8094]
+    
+    LB --> GW1
+    LB --> GW2
+    LB --> GW3
+    
+    GW1 -.-> NET
+    GW2 -.-> NET
+    GW3 -.-> NET
+    U1 -.-> NET
+    U2 -.-> NET
+    P1 -.-> NET
+    P2 -.-> NET
+    O1 -.-> NET
+    F1 -.-> NET
+    
+    M --> GW1
+    M --> GW2
+    M --> GW3
+    
+    style M fill:#ff6b6b
+    style NET fill:#4ecdc4
+    style LB fill:#feca57
 ```
 
 ---
@@ -132,7 +234,7 @@ cargo bench
 
 ## 🐳 Docker & Kubernetes
 
-### Docker Compose (Full Demo)
+### Docker Compose (Development)
 ```bash
 cd demo
 docker-compose up
@@ -140,18 +242,54 @@ docker-compose up
 ```
 
 ### Docker Swarm (Production Cluster)
+
+Deploy RustyGW across multiple nodes with high availability:
+
 ```bash
-# Initialize swarm (if not already done)
+# Initialize swarm cluster
 docker swarm init
 
-# Deploy stack
+# Deploy the stack
 docker stack deploy -c docker-compose.swarm.yml rustygw
 
-# Scale services
+# Scale gateway instances
 docker service scale rustygw_gateway=5
 
-# Check status
+# Check service status
 docker stack services rustygw
+
+# View service logs
+docker service logs rustygw_gateway
+
+# Update service (rolling update)
+docker service update --image rustygw:v2.0.0 rustygw_gateway
+
+# Remove stack
+docker stack rm rustygw
+```
+
+#### Swarm Features
+- **High Availability**: 3 gateway replicas across nodes
+- **Load Balancing**: Built-in service discovery and routing
+- **Health Checks**: Automatic container restart on failure
+- **Rolling Updates**: Zero-downtime deployments
+- **Resource Management**: CPU/memory limits and reservations
+- **Overlay Networking**: Secure inter-service communication
+
+#### Production Swarm Setup
+```bash
+# On manager node
+docker swarm init --advertise-addr <MANAGER-IP>
+
+# On worker nodes (use token from init output)
+docker swarm join --token <TOKEN> <MANAGER-IP>:2377
+
+# Deploy with production config
+docker stack deploy -c docker-compose.swarm.yml rustygw
+
+# Monitor cluster
+docker node ls
+docker service ls
 ```
 
 ### Kubernetes Deployment
