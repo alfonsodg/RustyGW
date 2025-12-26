@@ -1860,41 +1860,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust_api_gateway"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum",
- "axum-client-ip",
- "axum-prometheus",
- "bytes",
- "clap",
- "criterion",
- "dashmap",
- "dotenvy",
- "futures",
- "http",
- "http-body-util",
- "hyper",
- "jsonwebtoken",
- "moka",
- "notify",
- "once_cell",
- "reqwest",
- "serde",
- "serde_json",
- "serde_yaml",
- "thiserror 2.0.12",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1960,6 +1925,41 @@ name = "rustversion"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a0d197bd2c9dc6e53b84da9556a69ba4cdfab8619eb41a8bd1cc2027a0f6b1d"
+
+[[package]]
+name = "rustygw"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "axum-client-ip",
+ "axum-prometheus",
+ "bytes",
+ "clap",
+ "criterion",
+ "dashmap",
+ "dotenvy",
+ "futures",
+ "http",
+ "http-body-util",
+ "hyper",
+ "jsonwebtoken",
+ "moka",
+ "notify",
+ "once_cell",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror 2.0.12",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
 
 [[package]]
 name = "ryu"

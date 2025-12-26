@@ -25,7 +25,7 @@ jobs:
         files: |
           target/release/main
         body: |
-          ## Rust API Gateway Release
+          ## RustyGW Release
           
           ### Features
           - High-performance API Gateway written in Rust
