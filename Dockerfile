@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy pre-compiled binary and config files
-COPY target/release/main /app/gateway
+COPY target/release/rustygw /app/gateway
 COPY gateway.yaml /app/
 COPY api_keys.yaml /app/
 

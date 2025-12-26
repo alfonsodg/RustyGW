@@ -38,7 +38,7 @@ name = "rustway"
 path = "src/lib.rs"
 
 [[bin]]
-name = "main"
+name = "rustygw"
 path = "src/main.rs"
 
 [[test]]

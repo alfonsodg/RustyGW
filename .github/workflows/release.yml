@@ -23,7 +23,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          target/release/main
+          target/release/rustygw
         body: |
           ## RustyGW Release
           
@@ -36,8 +36,8 @@ jobs:
           
           ### Usage
           ```bash
-          chmod +x main
-          ./main
+          chmod +x rustygw
+          ./rustygw
           ```
           
           ### Configuration
