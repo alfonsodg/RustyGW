@@ -3,6 +3,7 @@ pub mod app;
 pub mod config;
 pub mod errors;
 pub mod features;
+pub mod grpc_proxy;
 pub mod middleware;
 pub mod plugins;
 pub mod proxy;
