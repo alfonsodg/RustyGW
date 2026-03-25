@@ -60,6 +60,7 @@ pub struct RouteConfig {
     pub health_check: Option<HealthCheckConfig>,
     pub retry: Option<RetryConfig>,
     pub timeout: Option<String>,
+    pub transform: Option<TransformConfig>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -74,6 +75,19 @@ pub struct RetryConfig {
 
 fn default_retries() -> u32 { 2 }
 fn default_backoff() -> String { "100ms".to_string() }
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct TransformConfig {
+    #[serde(default)]
+    pub request_headers: HashMap<String, String>,
+    #[serde(default)]
+    pub remove_request_headers: Vec<String>,
+    #[serde(default)]
+    pub response_headers: HashMap<String, String>,
+    #[serde(default)]
+    pub remove_response_headers: Vec<String>,
+    pub rewrite_path: Option<String>,
+}
 
 impl RouteConfig {
     /// Returns all available destinations (single or multiple)

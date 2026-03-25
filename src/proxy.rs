@@ -38,12 +38,31 @@ pub async fn proxy_handler(
     let destinations = route.all_destinations();
     let healthy = state.health_checker.filter_healthy(&destinations);
     let idx = state.load_balancer.next_index(healthy.len(), &route.load_balance);
-    let destination_url = format!("{}{}", healthy[idx], destination_path);
+
+    // Apply path rewrite if configured
+    let final_path = route.transform.as_ref()
+        .and_then(|t| t.rewrite_path.as_ref())
+        .map(|rewrite| rewrite.replace("{path}", destination_path))
+        .unwrap_or_else(|| destination_path.to_string());
+
+    let destination_url = format!("{}{}", healthy[idx], final_path);
 
     let route_timeout = route.timeout.as_ref()
         .map(|t| crate::features::health_check::parse_duration(t));
 
     info!(destination = %destination_url, strategy = ?route.load_balance, "Forwarding request to backend");
+
+    // Apply request header transformations
+    if let Some(transform) = &route.transform {
+        for key in &transform.remove_request_headers {
+            headers.remove(key.as_str());
+        }
+        for (key, value) in &transform.request_headers {
+            if let Ok(v) = HeaderValue::from_str(value) {
+                headers.insert(http::header::HeaderName::from_bytes(key.as_bytes()).unwrap_or(http::header::HeaderName::from_static("x-invalid")), v);
+            }
+        }
+    }
 
     headers.insert(
         REQUEST_ID_HEADER,
@@ -107,6 +126,17 @@ pub async fn proxy_handler(
                     HeaderValue::from_str(&request_id)
                         .unwrap_or_else(|_| HeaderValue::from_static("unknown")),
                 );
+                // Apply response header transformations
+                if let Some(transform) = &route.transform {
+                    for key in &transform.remove_response_headers {
+                        response.headers_mut().remove(key.as_str());
+                    }
+                    for (key, value) in &transform.response_headers {
+                        if let (Ok(k), Ok(v)) = (http::header::HeaderName::from_bytes(key.as_bytes()), HeaderValue::from_str(value)) {
+                            response.headers_mut().insert(k, v);
+                        }
+                    }
+                }
                 return Ok(response);
             }
             Err(e) => {
