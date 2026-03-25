@@ -1,8 +1,8 @@
 # RustyGW
 
-A high-performance, lightweight API Gateway built in Rust. Perfect for microservices, serverless architectures, and modern cloud-native applications.
+A high-performance internal API Gateway for microservices. Designed for backend-to-frontend (BTF) and backend-to-backend (BTB) communication within a service stack.
 
-> **Note**: This project is a fork and enhancement of [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway) by [@Ketankhunti](https://github.com/Ketankhunti). We've added significant improvements including WebSocket support in demo services, enhanced security, Docker Swarm compatibility, and a complete demo application.
+> Built upon [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway) by [@Ketankhunti](https://github.com/Ketankhunti), extended with load balancing, WebSocket/gRPC proxy, API composition, health checks, distributed tracing, and production-grade resilience.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.92+-orange.svg)](https://www.rust-lang.org)
@@ -10,488 +10,274 @@ A high-performance, lightweight API Gateway built in Rust. Perfect for microserv
 
 ---
 
-## ✨ Features
+## Features
 
-- **🚀 High Performance**: 10,000+ req/sec with sub-millisecond latency
-- **🔒 Security First**: JWT & API key authentication with RBAC
-- **⚡ Rate Limiting**: Token bucket algorithm with per-IP protection
-- **🔄 Hot Reload**: Zero-downtime configuration updates
-- **📊 Observability**: Prometheus metrics and health checks
-- **🐳 Cloud Ready**: Docker, Kubernetes, and container-native
-- **🌐 WebSocket Support**: Real-time bidirectional communication (demo services)
-- **🛡️ Circuit Breaker**: Fault tolerance and resilience patterns
-- **💾 Caching**: Intelligent response caching with TTL
-- **📝 Request ID**: Distributed tracing support
+### Proxy
+- **HTTP Proxy** with path-based routing
+- **WebSocket Proxy** (`/ws/`) for real-time BTF communication
+- **gRPC Proxy** (`/grpc/`) with HTTP/2 transparent forwarding
+- **API Composition** (`/agg/`) — fan-out 1 request to N backends, merge responses
+
+### Resilience
+- **Load Balancing** — round-robin, random across multiple destinations
+- **Active Health Checks** — periodic probes, auto-remove/recover backends
+- **Retry + Timeout** — per-route retry count, backoff, status codes, timeout
+- **Circuit Breaker** — fault tolerance with configurable thresholds
+
+### Transformation
+- **Path Rewriting** — rewrite request paths with `{path}` placeholder
+- **Header Injection/Removal** — add or remove request and response headers
+- **Response Compression** — automatic gzip
+
+### Observability
+- **Prometheus Metrics** — request count, latency histograms, error rates
+- **W3C Distributed Tracing** — auto-generate and propagate `traceparent`
+- **Structured Access Logs** — method, path, status, duration_ms per request
+- **Health Endpoint** — `GET /health` returns `OK`
+
+### Security
+- **JWT + API Key Authentication** with RBAC
+- **Rate Limiting** — per-IP (BTF) or per-service via `x-service-name` header (BTB)
+- **CORS** — configurable origins, methods, headers
+- **TLS Skip Verify** — per-route flag for self-signed backend certs
+- **Body Size Limits** — configurable max request body
+
+### Operations
+- **Hot Reload** — zero-downtime config updates
+- **Connection Pooling** — configurable idle timeout, max connections
+- **Docker Swarm** — production cluster with replicas and health checks
+- **9.8MB Binary** — single executable, no dependencies
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### Download Binary (Recommended)
 ```bash
-# Download latest release
-curl -L https://github.com/alfonsodg/RustyGW/releases/latest/download/rustygw -o rustygw
-chmod +x rustygw
-
-# Run with default config
-./rustygw
-```
-
-### Docker
-```bash
-# Run with demo
-git clone https://github.com/alfonsodg/RustyGW.git
-cd RustyGW/demo
-docker-compose up
-```
-
-### From Source
-```bash
+# From source
 git clone https://github.com/alfonsodg/RustyGW.git
 cd RustyGW
 cargo build --release
 ./target/release/rustygw
+
+# Or Docker
+cd demo && docker-compose up
 ```
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
-### Basic Setup
-Create `gateway.yaml`:
+### Full Example (`gateway.yaml`)
+
 ```yaml
 server:
-  addr: "127.0.0.1:8094"
+  addr: "0.0.0.0:8094"
+  pool:
+    idle_timeout: 90s
+    max_idle_per_host: 32
+    connect_timeout: 5s
+    request_timeout: 30s
+    body_limit: 10mb
+
+cors:
+  enabled: true
+  origins: ["https://app.example.com"]
+  methods: [GET, POST, PUT, DELETE, PATCH, OPTIONS]
+  allow_headers: [content-type, authorization]
+
+observability:
+  metrics:
+    enabled: true
+
+identity:
+  api_key_store_path: "./api_keys.yaml"
 
 routes:
-  - name: "api"
-    path: "/api/users"
-    destination: "http://localhost:3001/users"
-    
-  - name: "protected"
-    path: "/admin"
-    destination: "http://localhost:3002/admin"
+  # Simple proxy
+  - name: users
+    path: /api/users
+    destination: http://users-service:8091/users
+
+  # Load balanced with health checks
+  - name: payments
+    path: /api/payments
+    destination: http://payments-1:8080
+    destinations:
+      - http://payments-1:8080
+      - http://payments-2:8080
+      - http://payments-3:8080
+    load_balance: round_robin
+    health_check:
+      interval: 5s
+      path: /health
+
+  # Retry + timeout
+  - name: orders
+    path: /api/orders
+    destination: http://orders-service:8093
+    timeout: 5s
+    retry:
+      count: 2
+      backoff: 100ms
+      retry_on: [502, 503, 504]
+
+  # Request/response transformation
+  - name: legacy_api
+    path: /api/v2/products
+    destination: http://products-service:8092
+    transform:
+      rewrite_path: /api/v1{path}
+      request_headers:
+        x-api-version: "2"
+      response_headers:
+        x-powered-by: RustyGW
+      remove_response_headers: [server]
+
+  # API composition (BTF killer feature)
+  - name: dashboard
+    path: /api/dashboard
+    destination: http://localhost
+    aggregate:
+      - service: users
+        path: http://users-service:8091/me
+        field: user
+        timeout: 3s
+      - service: orders
+        path: http://orders-service:8093/recent
+        field: orders
+      - service: notifications
+        path: http://notifications:8095/unread
+        field: notifications
+
+  # WebSocket route
+  - name: live
+    path: /api/live
+    destination: http://notifications:8095/ws
+
+  # HTTPS backend with self-signed cert
+  - name: internal_secure
+    path: /api/secure
+    destination: https://internal-service:8443
+    tls_skip_verify: true
+
+  # Auth + rate limiting
+  - name: admin
+    path: /admin
+    destination: http://admin-service:9000
     auth:
-      type: "ApiKey"
-      roles: ["admin"]
+      type: ApiKey
+      roles: [admin]
     rate_limit:
       requests: 100
-      period: "1m"
-```
-
-### API Keys (`api_keys.yaml`)
-```yaml
-keys:
-  "your-api-key":
-    user_id: "admin@example.com"
-    roles: ["admin", "user"]
-    status: "active"
+      period: 1m
 ```
 
 ---
 
-## 🏗️ Architecture
+## Usage Patterns
 
-```mermaid
-graph TB
-    subgraph "Client Layer"
-        C1[Web Browser]
-        C2[Mobile App]
-        C3[API Client]
-    end
-    
-    subgraph "RustyGW Gateway"
-        GW[RustyGW<br/>Port 8094]
-        
-        subgraph "Middleware Stack"
-            AUTH[Authentication<br/>JWT/API Keys]
-            RATE[Rate Limiting<br/>Token Bucket]
-            CACHE[Response Cache<br/>TTL Based]
-            CB[Circuit Breaker<br/>Fault Tolerance]
-            METRICS[Metrics<br/>Prometheus]
-        end
-    end
-    
-    subgraph "Backend Services"
-        U[Users Service<br/>Port 8091]
-        P[Products Service<br/>Port 8092]
-        O[Orders Service<br/>Port 8093]
-    end
-    
-    subgraph "Frontend"
-        F[Demo Frontend<br/>Port 8090<br/>WebSocket UI]
-    end
-    
-    subgraph "Monitoring"
-        PROM[Prometheus<br/>Metrics Collection]
-        GRAF[Grafana<br/>Dashboards]
-    end
-    
-    C1 --> GW
-    C2 --> GW
-    C3 --> GW
-    
-    GW --> AUTH
-    AUTH --> RATE
-    RATE --> CACHE
-    CACHE --> CB
-    CB --> METRICS
-    
-    GW --> U
-    GW --> P
-    GW --> O
-    GW --> F
-    
-    METRICS --> PROM
-    PROM --> GRAF
-    
-    style GW fill:#ff6b6b
-    style AUTH fill:#4ecdc4
-    style RATE fill:#45b7d1
-    style CACHE fill:#96ceb4
-    style CB fill:#feca57
-    style METRICS fill:#ff9ff3
+### BTF (Backend-to-Frontend)
+
+Frontend calls RustyGW as its single entry point:
+
+```
+Browser → RustyGW:8094 → Backend services
 ```
 
-### Docker Swarm Architecture
+Key features: API composition, CORS, WebSocket proxy, gzip compression, rate limiting by IP.
 
-```mermaid
-graph TB
-    subgraph "Docker Swarm Cluster"
-        subgraph "Manager Node"
-            M[Swarm Manager<br/>Orchestration]
-        end
-        
-        subgraph "Worker Node 1"
-            GW1[RustyGW Replica 1]
-            U1[Users Service 1]
-            F1[Frontend 1]
-        end
-        
-        subgraph "Worker Node 2"
-            GW2[RustyGW Replica 2]
-            P1[Products Service 1]
-            O1[Orders Service 1]
-        end
-        
-        subgraph "Worker Node 3"
-            GW3[RustyGW Replica 3]
-            U2[Users Service 2]
-            P2[Products Service 2]
-        end
-        
-        subgraph "Overlay Network"
-            NET[rustygw-network<br/>Service Discovery]
-        end
-    end
-    
-    LB[Load Balancer<br/>Port 8094]
-    
-    LB --> GW1
-    LB --> GW2
-    LB --> GW3
-    
-    GW1 -.-> NET
-    GW2 -.-> NET
-    GW3 -.-> NET
-    U1 -.-> NET
-    U2 -.-> NET
-    P1 -.-> NET
-    P2 -.-> NET
-    O1 -.-> NET
-    F1 -.-> NET
-    
-    M --> GW1
-    M --> GW2
-    M --> GW3
-    
-    style M fill:#ff6b6b
-    style NET fill:#4ecdc4
-    style LB fill:#feca57
+```bash
+# 1 call = data from 3 services
+curl http://gateway:8094/agg/api/dashboard
+# → {"user": {...}, "orders": [...], "notifications": [...]}
+
+# WebSocket through gateway
+wscat -c ws://gateway:8094/ws/api/live
+```
+
+### BTB (Backend-to-Backend)
+
+Services call RustyGW instead of calling each other directly:
+
+```
+Service A → RustyGW:8094 → Service B (with LB, retry, health checks)
+```
+
+Key features: load balancing, health checks, retry/timeout, circuit breaker, rate limiting by service name.
+
+```bash
+# Service A calls through gateway with service identity
+curl -H "x-service-name: order-service" http://gateway:8094/api/payments
 ```
 
 ---
 
-## 📊 Performance
+## Endpoints
+
+| Path | Protocol | Description |
+|------|----------|-------------|
+| `/{path}` | HTTP | Standard proxy with auth/rate-limit middleware |
+| `/ws/{path}` | WebSocket | Bidirectional WebSocket proxy |
+| `/agg/{path}` | HTTP | API composition (fan-out + merge) |
+| `/grpc/{path}` | gRPC/HTTP2 | Transparent gRPC proxy |
+| `/health` | HTTP | Health check (`OK`) |
+| `/metrics` | HTTP | Prometheus metrics |
+
+---
+
+## Performance
 
 | Metric | Value |
 |--------|-------|
-| **Throughput** | 20,000+ req/sec |
-| **Latency** | 4.59ms average |
-| **Memory** | ~10MB footprint |
-| **Binary Size** | 8.5MB optimized |
-| **Startup Time** | < 100ms |
+| Throughput | 20,000+ req/sec |
+| Avg Latency | 4.59ms (100 connections) |
+| Max Latency | 41.64ms under load |
+| Binary Size | 9.8MB |
+| Memory | ~10MB footprint |
 
-### Production Benchmarks
-
-RustyGW has been tested under real production conditions. See [PERFORMANCE.md](PERFORMANCE.md) for detailed benchmark results including:
-
-- **21,989 RPS** under moderate load (4 threads, 100 connections)
-- **20,550 RPS** under extreme load (8 threads, 200 connections)  
-- **Sub-10ms latency** maintained under sustained load
-- **71.88MB/s throughput** with consistent performance
-
-```bash
-# Run your own benchmarks
-wrk -t4 -c100 -d30s http://localhost:8094/metrics
-```
+See [PERFORMANCE.md](PERFORMANCE.md) for detailed wrk benchmark results.
 
 ---
 
-## 🐳 Docker & Kubernetes
+## Production Deployment
 
-### Docker Compose (Development)
-```bash
-cd demo
-docker-compose up
-# Access: http://localhost:8094
-```
-
-### Docker Swarm (Production Cluster)
-
-Deploy RustyGW across multiple nodes with high availability:
+### Docker Swarm
 
 ```bash
-# Initialize swarm cluster
 docker swarm init
-
-# Deploy the stack
 docker stack deploy -c docker-compose.swarm.yml rustygw
-
-# Scale gateway instances
-docker service scale rustygw_gateway=5
-
-# Check service status
-docker stack services rustygw
-
-# View service logs
-docker service logs rustygw_gateway
-
-# Update service (rolling update)
-docker service update --image rustygw:v2.0.0 rustygw_gateway
-
-# Remove stack
-docker stack rm rustygw
+docker service scale rustygw_gateway=3
 ```
 
-#### Swarm Features
-- **High Availability**: 3 gateway replicas across nodes
-- **Load Balancing**: Built-in service discovery and routing
-- **Health Checks**: Automatic container restart on failure
-- **Rolling Updates**: Zero-downtime deployments
-- **Resource Management**: CPU/memory limits and reservations
-- **Overlay Networking**: Secure inter-service communication
+### Architecture with Traefik
 
-#### Production Swarm Setup
-```bash
-# On manager node
-docker swarm init --advertise-addr <MANAGER-IP>
-
-# On worker nodes (use token from init output)
-docker swarm join --token <TOKEN> <MANAGER-IP>:2377
-
-# Deploy with production config
-docker stack deploy -c docker-compose.swarm.yml rustygw
-
-# Monitor cluster
-docker node ls
-docker service ls
+```
+Internet → Traefik (TLS/edge) → Services
+                                    ↓
+                          Service A → RustyGW → Service B (BTB)
+                          Frontend  → RustyGW → Backends  (BTF)
 ```
 
-### Kubernetes Deployment
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: rustygw
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: rustygw
-  template:
-    spec:
-      containers:
-      - name: rustygw
-        image: rustygw:latest
-        ports:
-        - containerPort: 8094
-        livenessProbe:
-          httpGet:
-            path: /metrics
-            port: 8094
-```
+RustyGW sits behind Traefik inside the Swarm overlay network. Traefik handles external TLS, RustyGW handles internal routing, load balancing, and resilience.
 
 ---
 
-## 📈 Monitoring
-
-### Metrics Endpoint
-- **URL**: `http://localhost:8094/metrics`
-- **Format**: Prometheus compatible
-- **Includes**: Requests, latency, errors, rate limits
-
-### Health Check
-- **URL**: `http://localhost:8094/health`
-- **Response**: `OK` (plain text, HTTP 200)
-
-### Prometheus Config
-```yaml
-scrape_configs:
-  - job_name: 'rustygw'
-    static_configs:
-      - targets: ['localhost:8094']
-```
-
----
-
-## 🧪 Demo Application
-
-The repository includes a complete demo with:
-- **Frontend**: Real-time WebSocket dashboard (connects to backend services)
-- **3 Backend Services**: Users, Products, Orders
-- **Gateway**: Unified API access point
-- **Docker Compose**: One-command deployment
+## Development
 
 ```bash
-cd demo
-docker-compose up
-# Frontend: http://localhost:8090
-# Gateway: http://localhost:8094
+cargo build          # Build
+cargo test           # Run tests
+cargo clippy         # Lint
+cargo audit          # Security audit
+cargo watch -x run   # Hot reload dev
 ```
 
 ---
 
-## 🔧 Development
+## Acknowledgments
 
-### Prerequisites
-- Rust 1.92+ 
-- Docker (optional)
+Built upon [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway) by [@Ketankhunti](https://github.com/Ketankhunti). Extended with load balancing, WebSocket/gRPC proxy, API composition, health checks, distributed tracing, CORS, compression, and production-grade resilience patterns.
 
-### Setup
-```bash
-git clone https://github.com/alfonsodg/RustyGW.git
-cd RustyGW
+## License
 
-# Install dependencies and build
-cargo build
-
-# Run tests (15+ test suites)
-cargo test
-
-# Security audit
-cargo audit
-
-# Format and lint
-cargo fmt && cargo clippy
-```
-
-### Hot Reload Development
-```bash
-cargo install cargo-watch
-cargo watch -x run
-```
-
----
-
-## 🧪 Testing
-
-Comprehensive test coverage with 15+ test suites:
-
-```bash
-# All tests
-cargo test
-
-# Specific suites
-cargo test --test auth_test        # Authentication
-cargo test --test rate_limit       # Rate limiting  
-cargo test --test concurrency_tests # Thread safety
-
-# With output
-cargo test -- --nocapture
-
-# Benchmarks
-cargo bench
-```
-
----
-
-## 🚀 Production
-
-### Security Checklist
-- ✅ Use strong JWT secrets
-- ✅ Enable HTTPS/TLS
-- ✅ Configure rate limits
-- ✅ Set up monitoring
-- ✅ Regular security audits
-
-### Deployment Options
-- **Binary**: Single executable, no dependencies
-- **Docker**: Container-ready with health checks
-- **Docker Swarm**: Multi-node cluster deployment
-- **Kubernetes**: Cloud-native with scaling
-- **Serverless**: AWS Lambda compatible
-
-### Configuration Management
-- Environment variables for secrets
-- ConfigMaps for Kubernetes
-- Hot reload for zero-downtime updates
-- Validation on startup
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch: `git checkout -b feature/amazing-feature`
-3. Run tests: `cargo test`
-4. Commit changes: `git commit -m 'Add amazing feature'`
-5. Push branch: `git push origin feature/amazing-feature`
-6. Open Pull Request
-
-### Code Standards
-- Follow Rust conventions
-- Add tests for new features
-- Update documentation
-- Run `cargo fmt` and `cargo clippy`
-
----
-
-## 🙏 Acknowledgments
-
-This project is built upon the excellent foundation of [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway) by [@Ketankhunti](https://github.com/Ketankhunti). We've extended it with:
-
-- WebSocket support and real-time features
-- Enhanced security and authentication
-- Docker Swarm compatibility
-- Complete demo application with frontend
-- Comprehensive testing suite
-- Production-ready monitoring and observability
-- Performance optimizations and benchmarks
-
-Special thanks to the original author for creating the solid foundation that made this enhanced version possible.
-
----
-
-## 📄 License
-
-Licensed under the Apache License 2.0 - see [LICENSE](LICENSE) for details.
-
----
-
-## 🔗 Links
-
-- **Documentation**: [GitHub Wiki](https://github.com/alfonsodg/RustyGW/wiki)
-- **Releases**: [GitHub Releases](https://github.com/alfonsodg/RustyGW/releases)
-- **Issues**: [GitHub Issues](https://github.com/alfonsodg/RustyGW/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/alfonsodg/RustyGW/discussions)
-
----
-
-<div align="center">
-
-**⭐ Star this project if you find it useful!**
-
-Made with ❤️ and 🦀 Rust
-
-</div>
+Apache License 2.0 — see [LICENSE](LICENSE).
