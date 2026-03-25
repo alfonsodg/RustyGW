@@ -1,2 +1,11 @@
 /target
 .env
+
+# Agent configs
+AGENTS.md
+.github/copilot-instructions.md
+
+# Local test scripts
+stress_test.sh
+test_websocket.py
+todo
