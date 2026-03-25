@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use http::HeaderMap;
 use jsonwebtoken::{DecodingKey, Validation, decode, errors::ErrorKind};
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::debug;
 
 use crate::{
     config::{ApiKeyStore, AuthType, SecretsConfig},
