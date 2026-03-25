@@ -7,6 +7,7 @@ pub mod plugins;
 pub mod proxy;
 pub mod state;
 pub mod utils;
+pub mod ws_proxy;
 
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 

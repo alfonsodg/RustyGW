@@ -22,12 +22,14 @@ use crate::{
     proxy::proxy_handler,
     state::AppState,
     utils::metric_handler::metrics_handler,
+    ws_proxy::ws_proxy_handler,
 };
 
 pub const REQUEST_ID_HEADER: &str = "x-request-id";
 
 pub fn create_app(state: Arc<AppState>) -> Result<Router, Error> {
     let proxy_router = Router::new()
+        .route("/ws/{*path}", get(ws_proxy_handler))
         .route("/{*path}", any(proxy_handler))
         .route_layer(from_fn_with_state(state.clone(), circuit_breaker_layer))
         .route_layer(from_fn_with_state(state.clone(), cache_layer))
