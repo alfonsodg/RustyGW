@@ -58,7 +58,22 @@ pub struct RouteConfig {
     pub cache: Option<CacheConfig>,
     pub circuit_breaker: Option<CircuitBreakerConfig>,
     pub health_check: Option<HealthCheckConfig>,
+    pub retry: Option<RetryConfig>,
+    pub timeout: Option<String>,
 }
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct RetryConfig {
+    #[serde(default = "default_retries")]
+    pub count: u32,
+    #[serde(default)]
+    pub retry_on: Vec<u16>,
+    #[serde(default = "default_backoff")]
+    pub backoff: String,
+}
+
+fn default_retries() -> u32 { 2 }
+fn default_backoff() -> String { "100ms".to_string() }
 
 impl RouteConfig {
     /// Returns all available destinations (single or multiple)
