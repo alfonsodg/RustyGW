@@ -46,12 +46,15 @@ pub struct PoolConfig {
     pub connect_timeout: String,
     #[serde(default = "default_request_timeout")]
     pub request_timeout: String,
+    #[serde(default = "default_body_limit")]
+    pub body_limit: String,
 }
 
 fn default_pool_idle_timeout() -> String { "90s".to_string() }
 fn default_pool_max_idle() -> usize { 32 }
 fn default_connect_timeout() -> String { "5s".to_string() }
 fn default_request_timeout() -> String { "30s".to_string() }
+fn default_body_limit() -> String { "10mb".to_string() }
 
 impl Default for PoolConfig {
     fn default() -> Self {
@@ -60,6 +63,7 @@ impl Default for PoolConfig {
             max_idle_per_host: default_pool_max_idle(),
             connect_timeout: default_connect_timeout(),
             request_timeout: default_request_timeout(),
+            body_limit: default_body_limit(),
         }
     }
 }

@@ -9,7 +9,7 @@ use axum::{
 };
 use axum_client_ip::ClientIpSource;
 use http::{HeaderName, Method as HttpMethod, StatusCode};
-use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 use uuid::Uuid;
 
 use crate::{
@@ -19,6 +19,7 @@ use crate::{
         rate_limiter::rate_limit::layer as ratelimiter_layer,
         request_id::request_id::layer as request_id_layer,
         tracing_ctx::layer as tracing_ctx_layer,
+        access_log::layer as access_log_layer,
     },
     proxy::proxy_handler,
     aggregate::aggregate_handler,
@@ -30,7 +31,7 @@ use crate::{
 
 pub const REQUEST_ID_HEADER: &str = "x-request-id";
 
-pub fn create_app(state: Arc<AppState>, cors: &crate::config::CorsConfig) -> Result<Router, Error> {
+pub fn create_app(state: Arc<AppState>, cors: &crate::config::CorsConfig, body_limit: usize) -> Result<Router, Error> {
     let proxy_router = Router::new()
         .route("/{*path}", any(proxy_handler))
         .route_layer(from_fn_with_state(state.clone(), circuit_breaker_layer))
@@ -75,6 +76,7 @@ pub fn create_app(state: Arc<AppState>, cors: &crate::config::CorsConfig) -> Res
         .merge(proxy_router)
         .merge(prometheus_router)
         .layer(from_fn(tracing_ctx_layer))
+        .layer(from_fn(access_log_layer))
         .with_state(state)
         .layer(ClientIpSource::ConnectInfo.into_extension());
 
@@ -83,6 +85,10 @@ pub fn create_app(state: Arc<AppState>, cors: &crate::config::CorsConfig) -> Res
     } else {
         router
     };
+
+    let router = router
+        .layer(CompressionLayer::new())
+        .layer(axum::extract::DefaultBodyLimit::max(body_limit));
 
     Ok(router
         .layer(

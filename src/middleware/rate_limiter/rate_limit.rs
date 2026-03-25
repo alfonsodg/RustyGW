@@ -28,8 +28,12 @@ pub async fn layer(
         let capacity = rate_limit_config.requests;
         let refill_rate = rate_limit_config.requests as f64 / period.as_secs_f64();
 
-        // clinets Ip address as key to rate limiting
-        let key = client_ip.to_string();
+        // Use x-service-name header if present (BTB), otherwise client IP (BTF)
+        let key = req.headers()
+            .get("x-service-name")
+            .and_then(|v| v.to_str().ok())
+            .map(|s| format!("svc:{}", s))
+            .unwrap_or_else(|| client_ip.to_string());
         let allowed = state
             .rate_limit_store
             .check_and_update(&key, capacity, refill_rate)

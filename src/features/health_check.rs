@@ -134,3 +134,14 @@ pub fn parse_duration(s: &str) -> Duration {
         Duration::from_secs(10)
     }
 }
+
+pub fn parse_body_limit(s: &str) -> usize {
+    let s = s.trim().to_lowercase();
+    if let Some(mb) = s.strip_suffix("mb") {
+        mb.parse::<usize>().unwrap_or(10) * 1024 * 1024
+    } else if let Some(kb) = s.strip_suffix("kb") {
+        kb.parse::<usize>().unwrap_or(1024) * 1024
+    } else {
+        s.parse::<usize>().unwrap_or(10 * 1024 * 1024)
+    }
+}

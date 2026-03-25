@@ -131,11 +131,12 @@ pub async fn run(config_path: PathBuf) -> Result<()> {
         key_store.clone(), // Clone for the watcher task
     ));
 
-    let cors_config = {
+    let (cors_config, body_limit) = {
         let cfg = config.read().await;
-        cfg.cors.clone()
+        let bl = features::health_check::parse_body_limit(&cfg.server.pool.body_limit);
+        (cfg.cors.clone(), bl)
     };
-    let mut app = app::create_app(app_state, &cors_config)?;
+    let mut app = app::create_app(app_state, &cors_config, body_limit)?;
 
     if let Some(layer) = prometheus_layer {
         app = app.layer(layer);

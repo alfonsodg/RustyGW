@@ -1,3 +1,4 @@
+pub mod access_log;
 pub mod auth;
 pub mod cache;
 pub mod circuit_breaker;
