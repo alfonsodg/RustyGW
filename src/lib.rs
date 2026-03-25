@@ -1,3 +1,4 @@
+pub mod aggregate;
 pub mod app;
 pub mod config;
 pub mod errors;

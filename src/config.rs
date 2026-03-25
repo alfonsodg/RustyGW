@@ -61,6 +61,15 @@ pub struct RouteConfig {
     pub retry: Option<RetryConfig>,
     pub timeout: Option<String>,
     pub transform: Option<TransformConfig>,
+    pub aggregate: Option<Vec<AggregateSource>>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct AggregateSource {
+    pub service: String,
+    pub path: String,
+    pub field: String,
+    pub timeout: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
