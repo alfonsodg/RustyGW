@@ -41,7 +41,8 @@ pub async fn proxy_handler(
 
     headers.insert(
         REQUEST_ID_HEADER,
-        HeaderValue::from_str(&request_id).unwrap(),
+        HeaderValue::from_str(&request_id)
+            .unwrap_or_else(|_| HeaderValue::from_static("unknown")),
     );
 
     let body_bytes: Bytes = body
@@ -76,10 +77,12 @@ pub async fn proxy_handler(
         response_builder = response_builder.header(name, value);
     }
 
-    let mut response = response_builder.body(body).unwrap();
+    let mut response = response_builder.body(body)
+        .map_err(|_| AppError::InternalServerError)?;
     response.headers_mut().insert(
         REQUEST_ID_HEADER,
-        HeaderValue::from_str(&request_id).unwrap(),
+        HeaderValue::from_str(&request_id)
+            .unwrap_or_else(|_| HeaderValue::from_static("unknown")),
     );
     Ok(response)
 }
