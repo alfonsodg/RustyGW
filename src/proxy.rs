@@ -36,8 +36,9 @@ pub async fn proxy_handler(
     let destination_path = request_path.strip_prefix(&route.path).unwrap_or("");
 
     let destinations = route.all_destinations();
-    let idx = state.load_balancer.next_index(destinations.len(), &route.load_balance);
-    let destination_url = format!("{}{}", destinations[idx], destination_path);
+    let healthy = state.health_checker.filter_healthy(&destinations);
+    let idx = state.load_balancer.next_index(healthy.len(), &route.load_balance);
+    let destination_url = format!("{}{}", healthy[idx], destination_path);
 
     info!(destination = %destination_url, strategy = ?route.load_balance, "Forwarding request to backend");
 

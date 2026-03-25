@@ -70,21 +70,44 @@ pub async fn run(config_path: PathBuf) -> Result<()> {
 
     let plugin_registry = Arc::new(plugins::PluginRegistry::new());
 
+    let health_checker = Arc::new(features::health_check::HealthChecker::new());
+
+    let http_client = Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(5))
+        .timeout(std::time::Duration::from_secs(30))
+        .pool_idle_timeout(std::time::Duration::from_secs(90))
+        .build()
+        .expect("Failed to build HTTP client");
+
+    // Collect health check targets from routes
+    {
+        let cfg = config.read().await;
+        let mut targets = Vec::new();
+        for route in &cfg.routes {
+            if let Some(hc) = &route.health_check {
+                let interval = features::health_check::parse_duration(&hc.interval);
+                for dest in route.all_destinations() {
+                    targets.push((dest.to_string(), hc.path.clone(), interval));
+                }
+            }
+        }
+        if !targets.is_empty() {
+            health_checker.start_checker(http_client.clone(), targets);
+            info!("Health checks started");
+        }
+    }
+
     let app_state = Arc::new(AppState {
         config: config.clone(),
         secrets,
         key_store: key_store.clone(),
         rate_limit_store,
         cache,
-        http_client: Client::builder()
-            .connect_timeout(std::time::Duration::from_secs(5))
-            .timeout(std::time::Duration::from_secs(30))
-            .pool_idle_timeout(std::time::Duration::from_secs(90))
-            .build()
-            .expect("Failed to build HTTP client"),
+        http_client,
         prometheus_handle,
         circuit_breaker_store,
         load_balancer: features::load_balancer::LoadBalancer::new(),
+        health_checker,
         plugin_registry,
     });
 

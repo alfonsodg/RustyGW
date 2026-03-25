@@ -42,6 +42,7 @@ pub struct RateLimitConfig {
 }
 
 use crate::features::load_balancer::LoadBalanceStrategy;
+use crate::features::health_check::HealthCheckConfig;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct RouteConfig {
@@ -56,6 +57,7 @@ pub struct RouteConfig {
     pub rate_limit: Option<RateLimitConfig>,
     pub cache: Option<CacheConfig>,
     pub circuit_breaker: Option<CircuitBreakerConfig>,
+    pub health_check: Option<HealthCheckConfig>,
 }
 
 impl RouteConfig {

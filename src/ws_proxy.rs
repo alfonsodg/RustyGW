@@ -24,8 +24,9 @@ pub async fn ws_proxy_handler(
         config.find_route_for_path(&request_path).map(|route| {
             let dest_path = request_path.strip_prefix(&route.path).unwrap_or("");
             let destinations = route.all_destinations();
-            let idx = state.load_balancer.next_index(destinations.len(), &route.load_balance);
-            let base = destinations[idx].replace("http://", "ws://").replace("https://", "wss://");
+            let healthy = state.health_checker.filter_healthy(&destinations);
+            let idx = state.load_balancer.next_index(healthy.len(), &route.load_balance);
+            let base = healthy[idx].replace("http://", "ws://").replace("https://", "wss://");
             format!("{}{}", base, dest_path)
         })
     };

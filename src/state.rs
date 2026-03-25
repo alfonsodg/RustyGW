@@ -9,6 +9,7 @@ use crate::{
     config::{ApiKeyStore, GatewayConfig, SecretsConfig},
     features::{
         circuit_breaker::circuit_breaker::CircuitBreakerStore,
+        health_check::HealthChecker,
         load_balancer::LoadBalancer,
         rate_limiter::state::RateLimitState,
     },
@@ -34,5 +35,6 @@ pub struct AppState {
     pub prometheus_handle: Option<PrometheusHandle>,
     pub circuit_breaker_store: Arc<CircuitBreakerStore>,
     pub load_balancer: LoadBalancer,
+    pub health_checker: Arc<HealthChecker>,
     pub plugin_registry: Arc<PluginRegistry>,
 }
