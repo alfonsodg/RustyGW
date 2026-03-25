@@ -16,10 +16,15 @@ routes:
     path: "/"
     destination: "http://127.0.0.1:8090"
     
-  # Users service routes
+  # Users service routes (load balanced example)
   - name: "users_list"
     path: "/api/users"
     destination: "http://127.0.0.1:8091/users"
+    # Multiple instances with load balancing:
+    # destinations:
+    #   - "http://users-service-1:8091/users"
+    #   - "http://users-service-2:8091/users"
+    # load_balance: round_robin  # or: random
     
   - name: "users_by_id"
     path: "/api/users/{id}"

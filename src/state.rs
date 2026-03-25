@@ -8,7 +8,9 @@ use std::{sync::Arc, time::Instant};
 use crate::{
     config::{ApiKeyStore, GatewayConfig, SecretsConfig},
     features::{
-        circuit_breaker::circuit_breaker::CircuitBreakerStore, rate_limiter::state::RateLimitState,
+        circuit_breaker::circuit_breaker::CircuitBreakerStore,
+        load_balancer::LoadBalancer,
+        rate_limiter::state::RateLimitState,
     },
     plugins::PluginRegistry,
 };
@@ -31,5 +33,6 @@ pub struct AppState {
     pub http_client: Client,
     pub prometheus_handle: Option<PrometheusHandle>,
     pub circuit_breaker_store: Arc<CircuitBreakerStore>,
+    pub load_balancer: LoadBalancer,
     pub plugin_registry: Arc<PluginRegistry>,
 }

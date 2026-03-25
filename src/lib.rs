@@ -83,6 +83,7 @@ pub async fn run(config_path: PathBuf) -> Result<()> {
             .expect("Failed to build HTTP client"),
         prometheus_handle,
         circuit_breaker_store,
+        load_balancer: features::load_balancer::LoadBalancer::new(),
         plugin_registry,
     });
 

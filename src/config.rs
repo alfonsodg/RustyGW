@@ -41,15 +41,32 @@ pub struct RateLimitConfig {
     pub period: String,
 }
 
+use crate::features::load_balancer::LoadBalanceStrategy;
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct RouteConfig {
     pub name: String,
     pub path: String,
     pub destination: String,
+    #[serde(default)]
+    pub destinations: Vec<String>,
+    #[serde(default)]
+    pub load_balance: LoadBalanceStrategy,
     pub auth: Option<AuthConfig>,
     pub rate_limit: Option<RateLimitConfig>,
     pub cache: Option<CacheConfig>,
     pub circuit_breaker: Option<CircuitBreakerConfig>,
+}
+
+impl RouteConfig {
+    /// Returns all available destinations (single or multiple)
+    pub fn all_destinations(&self) -> Vec<&str> {
+        if self.destinations.is_empty() {
+            vec![&self.destination]
+        } else {
+            self.destinations.iter().map(|s| s.as_str()).collect()
+        }
+    }
 }
 
 impl GatewayConfig {
