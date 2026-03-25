@@ -75,7 +75,12 @@ pub async fn run(config_path: PathBuf) -> Result<()> {
         key_store: key_store.clone(),
         rate_limit_store,
         cache,
-        http_client: Client::new(),
+        http_client: Client::builder()
+            .connect_timeout(std::time::Duration::from_secs(5))
+            .timeout(std::time::Duration::from_secs(30))
+            .pool_idle_timeout(std::time::Duration::from_secs(90))
+            .build()
+            .expect("Failed to build HTTP client"),
         prometheus_handle,
         circuit_breaker_store,
         plugin_registry,
