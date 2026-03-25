@@ -43,6 +43,11 @@ A high-performance internal API Gateway for microservices. Designed for backend-
 - **Body Size Limits** — configurable max request body
 
 ### Operations
+- **Service Abstraction** — define services once, reference in routes
+- **Global Defaults** — timeout, retry, load_balance applied to all routes
+- **Environment Variables** — `${VAR}` interpolation in YAML config
+- **Config Validation** — clear error messages on startup
+- **Config Includes** — split config across multiple files
 - **Hot Reload** — zero-downtime config updates
 - **Connection Pooling** — configurable idle timeout, max connections
 - **Docker Swarm** — production cluster with replicas and health checks
@@ -71,13 +76,35 @@ cd demo && docker-compose up
 
 ```yaml
 server:
-  addr: "0.0.0.0:8094"
+  addr: "${GATEWAY_ADDR:-0.0.0.0:8094}"  # env var interpolation
   pool:
     idle_timeout: 90s
     max_idle_per_host: 32
     connect_timeout: 5s
     request_timeout: 30s
     body_limit: 10mb
+
+# Include additional config files
+include:
+  - conf.d/*.yaml
+
+# Define services once, reference in routes
+services:
+  users:
+    urls: ["${USERS_URL_1}", "${USERS_URL_2}"]
+    load_balance: round_robin
+    health_check: {interval: 5s, path: /health}
+    retry: {count: 2, backoff: 100ms}
+    timeout: 5s
+  payments:
+    url: http://payments:8080
+    tls_skip_verify: true
+    timeout: 10s
+
+# Global defaults (applied to all routes unless overridden)
+defaults:
+  timeout: 5s
+  retry: {count: 1, backoff: 100ms}
 
 cors:
   enabled: true
@@ -93,45 +120,29 @@ identity:
   api_key_store_path: "./api_keys.yaml"
 
 routes:
-  # Simple proxy
+  # Simple: reference a service (inherits all service config)
   - name: users
     path: /api/users
-    destination: http://users-service:8091/users
+    service: users
 
-  # Load balanced with health checks
+  # Override service defaults per route
+  - name: users_admin
+    path: /api/admin/users
+    service: users
+    timeout: 15s
+    auth:
+      type: ApiKey
+      roles: [admin]
+
+  # Direct destination (no service)
+  - name: legacy
+    path: /api/legacy
+    destination: http://legacy-service:9000
+
+  # Load balanced with health checks (inline, no service)
   - name: payments
     path: /api/payments
-    destination: http://payments-1:8080
-    destinations:
-      - http://payments-1:8080
-      - http://payments-2:8080
-      - http://payments-3:8080
-    load_balance: round_robin
-    health_check:
-      interval: 5s
-      path: /health
-
-  # Retry + timeout
-  - name: orders
-    path: /api/orders
-    destination: http://orders-service:8093
-    timeout: 5s
-    retry:
-      count: 2
-      backoff: 100ms
-      retry_on: [502, 503, 504]
-
-  # Request/response transformation
-  - name: legacy_api
-    path: /api/v2/products
-    destination: http://products-service:8092
-    transform:
-      rewrite_path: /api/v1{path}
-      request_headers:
-        x-api-version: "2"
-      response_headers:
-        x-powered-by: RustyGW
-      remove_response_headers: [server]
+    service: payments
 
   # API composition (BTF killer feature)
   - name: dashboard
