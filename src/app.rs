@@ -32,19 +32,22 @@ pub const REQUEST_ID_HEADER: &str = "x-request-id";
 
 pub fn create_app(state: Arc<AppState>) -> Result<Router, Error> {
     let proxy_router = Router::new()
-        .route("/ws/{*path}", get(ws_proxy_handler))
-        .route("/agg/{*path}", get(aggregate_handler))
-        .route("/grpc/{*path}", any(grpc_proxy_handler))
         .route("/{*path}", any(proxy_handler))
         .route_layer(from_fn_with_state(state.clone(), circuit_breaker_layer))
         .route_layer(from_fn_with_state(state.clone(), cache_layer))
         .route_layer(from_fn_with_state(state.clone(), ratelimiter_layer))
         .route_layer(from_fn_with_state(state.clone(), auth_layer));
 
+    let ws_router = Router::new().route("/ws/{*path}", get(ws_proxy_handler));
+    let agg_router = Router::new().route("/agg/{*path}", get(aggregate_handler));
+    let grpc_router = Router::new().route("/grpc/{*path}", any(grpc_proxy_handler));
     let prometheus_router = Router::new().route("/metrics", get(metrics_handler));
 
     let router = Router::new()
         .route("/health", get(|| async { (StatusCode::OK, "OK") }))
+        .merge(ws_router)
+        .merge(agg_router)
+        .merge(grpc_router)
         .merge(proxy_router)
         .merge(prometheus_router)
         .layer(from_fn(tracing_ctx_layer))

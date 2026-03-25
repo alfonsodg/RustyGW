@@ -124,7 +124,9 @@ impl Default for HealthChecker {
 
 pub fn parse_duration(s: &str) -> Duration {
     let s = s.trim();
-    if let Some(secs) = s.strip_suffix('s') {
+    if let Some(ms) = s.strip_suffix("ms") {
+        Duration::from_millis(ms.parse().unwrap_or(100))
+    } else if let Some(secs) = s.strip_suffix('s') {
         Duration::from_secs(secs.parse().unwrap_or(10))
     } else if let Some(mins) = s.strip_suffix('m') {
         Duration::from_secs(mins.parse::<u64>().unwrap_or(1) * 60)
