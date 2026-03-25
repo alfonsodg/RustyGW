@@ -42,24 +42,17 @@ impl RateLimitState for InMemoryRateLimitState {
             }))
         });
 
-        let last_refill_time = {
-            let bucket = entry.read().await;
-            bucket.last_refill
-        };
-
-        let elapsed = last_refill_time.elapsed().as_secs_f64();
-        let tokens_to_add = elapsed * refill_rate;
-
         let mut bucket = entry.write().await;
 
-        bucket.tokens = (bucket.tokens + tokens_to_add).min(capacity as f64);
+        let elapsed = bucket.last_refill.elapsed().as_secs_f64();
+        bucket.tokens = (bucket.tokens + elapsed * refill_rate).min(capacity as f64);
         bucket.last_refill = Instant::now();
 
         if bucket.tokens >= 1.0 {
             bucket.tokens -= 1.0;
-            true // Allowed
+            true
         } else {
-            false // Denied
+            false
         }
     }
 }
