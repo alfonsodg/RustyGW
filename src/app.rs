@@ -8,8 +8,8 @@ use axum::{
     routing::{any, get},
 };
 use axum_client_ip::ClientIpSource;
-use http::StatusCode;
-use tower_http::trace::TraceLayer;
+use http::{HeaderName, Method as HttpMethod, StatusCode};
+use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use uuid::Uuid;
 
 use crate::{
@@ -30,7 +30,7 @@ use crate::{
 
 pub const REQUEST_ID_HEADER: &str = "x-request-id";
 
-pub fn create_app(state: Arc<AppState>) -> Result<Router, Error> {
+pub fn create_app(state: Arc<AppState>, cors: &crate::config::CorsConfig) -> Result<Router, Error> {
     let proxy_router = Router::new()
         .route("/{*path}", any(proxy_handler))
         .route_layer(from_fn_with_state(state.clone(), circuit_breaker_layer))
@@ -43,6 +43,30 @@ pub fn create_app(state: Arc<AppState>) -> Result<Router, Error> {
     let grpc_router = Router::new().route("/grpc/{*path}", any(grpc_proxy_handler));
     let prometheus_router = Router::new().route("/metrics", get(metrics_handler));
 
+    // Build CORS layer
+    let cors_layer = if cors.enabled {
+        let origins: Vec<_> = cors.origins.iter()
+            .filter_map(|o| o.parse().ok())
+            .collect();
+        let methods: Vec<HttpMethod> = cors.methods.iter()
+            .filter_map(|m| m.parse().ok())
+            .collect();
+        let mut layer = CorsLayer::new()
+            .allow_methods(methods)
+            .allow_origin(origins);
+        if !cors.allow_headers.is_empty() {
+            let headers: Vec<HeaderName> = cors.allow_headers.iter()
+                .filter_map(|h| h.parse().ok())
+                .collect();
+            layer = layer.allow_headers(headers);
+        } else {
+            layer = layer.allow_headers(tower_http::cors::Any);
+        }
+        Some(layer)
+    } else {
+        None
+    };
+
     let router = Router::new()
         .route("/health", get(|| async { (StatusCode::OK, "OK") }))
         .merge(ws_router)
@@ -53,6 +77,12 @@ pub fn create_app(state: Arc<AppState>) -> Result<Router, Error> {
         .layer(from_fn(tracing_ctx_layer))
         .with_state(state)
         .layer(ClientIpSource::ConnectInfo.into_extension());
+
+    let router = if let Some(cors_layer) = cors_layer {
+        router.layer(cors_layer)
+    } else {
+        router
+    };
 
     Ok(router
         .layer(

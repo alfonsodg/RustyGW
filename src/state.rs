@@ -32,6 +32,7 @@ pub struct AppState {
     pub rate_limit_store: Arc<dyn RateLimitState>,
     pub cache: Arc<Cache<String, Arc<CachedResponse>>>,
     pub http_client: Client,
+    pub http_client_insecure: Client,
     pub prometheus_handle: Option<PrometheusHandle>,
     pub circuit_breaker_store: Arc<CircuitBreakerStore>,
     pub load_balancer: LoadBalancer,

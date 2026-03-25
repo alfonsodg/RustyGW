@@ -110,7 +110,13 @@ pub async fn run(config_path: PathBuf) -> Result<()> {
         key_store: key_store.clone(),
         rate_limit_store,
         cache,
-        http_client,
+        http_client: http_client.clone(),
+        http_client_insecure: Client::builder()
+            .danger_accept_invalid_certs(true)
+            .connect_timeout(std::time::Duration::from_secs(5))
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .expect("Failed to build insecure HTTP client"),
         prometheus_handle,
         circuit_breaker_store,
         load_balancer: features::load_balancer::LoadBalancer::new(),
@@ -125,7 +131,11 @@ pub async fn run(config_path: PathBuf) -> Result<()> {
         key_store.clone(), // Clone for the watcher task
     ));
 
-    let mut app = app::create_app(app_state)?;
+    let cors_config = {
+        let cfg = config.read().await;
+        cfg.cors.clone()
+    };
+    let mut app = app::create_app(app_state, &cors_config)?;
 
     if let Some(layer) = prometheus_layer {
         app = app.layer(layer);

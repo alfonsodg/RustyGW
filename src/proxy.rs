@@ -87,9 +87,15 @@ pub async fn proxy_handler(
         .map(|r| crate::features::health_check::parse_duration(&r.backoff))
         .unwrap_or(std::time::Duration::from_millis(100));
 
+    let client = if route.tls_skip_verify {
+        &state.http_client_insecure
+    } else {
+        &state.http_client
+    };
+
     let mut last_err = None;
     for attempt in 0..max_attempts {
-        let mut req_builder = state.http_client
+        let mut req_builder = client
             .request(method.clone(), &destination_url)
             .headers(headers.clone())
             .body(body_bytes.clone());
@@ -103,7 +109,7 @@ pub async fn proxy_handler(
             AppError::InvalidDestination(destination_url.clone())
         })?;
 
-        match state.http_client.execute(request).await {
+        match client.execute(request).await {
             Ok(resp) => {
                 let status = resp.status();
                 if attempt + 1 < max_attempts && retry_on.contains(&status.as_u16()) {

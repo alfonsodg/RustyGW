@@ -10,7 +10,24 @@ pub struct GatewayConfig {
     #[serde(default)]
     pub observability: ObservabilityConfig,
     pub identity: IdentityConfig,
+    #[serde(default)]
+    pub cors: CorsConfig,
 }
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct CorsConfig {
+    #[serde(default = "default_cors_origins")]
+    pub origins: Vec<String>,
+    #[serde(default = "default_cors_methods")]
+    pub methods: Vec<String>,
+    #[serde(default)]
+    pub allow_headers: Vec<String>,
+    #[serde(default)]
+    pub enabled: bool,
+}
+
+fn default_cors_origins() -> Vec<String> { vec!["*".to_string()] }
+fn default_cors_methods() -> Vec<String> { vec!["GET".into(), "POST".into(), "PUT".into(), "DELETE".into(), "PATCH".into(), "OPTIONS".into()] }
 
 #[derive(Debug, Deserialize)]
 pub struct ServerConfig {
@@ -91,6 +108,8 @@ pub struct RouteConfig {
     pub retry: Option<RetryConfig>,
     pub timeout: Option<String>,
     pub transform: Option<TransformConfig>,
+    #[serde(default)]
+    pub tls_skip_verify: bool,
     pub aggregate: Option<Vec<AggregateSource>>,
 }
 
