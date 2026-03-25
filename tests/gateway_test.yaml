@@ -1,0 +1,83 @@
+server:
+  addr: "0.0.0.0:8094"
+  pool:
+    idle_timeout: 90s
+    max_idle_per_host: 32
+    connect_timeout: 5s
+    request_timeout: 30s
+
+observability:
+  metrics:
+    enabled: true
+
+identity:
+  api_key_store_path: "./api_keys.yaml"
+
+routes:
+  # Load balanced route - 2 instances
+  - name: "lb_test"
+    path: "/api/lb"
+    destination: "http://127.0.0.1:9001/api/lb"
+    destinations:
+      - "http://127.0.0.1:9001/api/lb"
+      - "http://127.0.0.1:9002/api/lb"
+    load_balance: round_robin
+    health_check:
+      interval: 5s
+      path: /health
+
+  # Retry + timeout test
+  - name: "retry_test"
+    path: "/api/retry"
+    destination: "http://127.0.0.1:9001/fail"
+    retry:
+      count: 2
+      backoff: 100ms
+      retry_on: [503]
+
+  - name: "timeout_test"
+    path: "/api/timeout"
+    destination: "http://127.0.0.1:9001/slow"
+    timeout: 2s
+
+  # Transform test
+  - name: "transform_test"
+    path: "/api/transform"
+    destination: "http://127.0.0.1:9001"
+    transform:
+      rewrite_path: /api/rewritten{path}
+      request_headers:
+        x-custom: injected-by-gateway
+      response_headers:
+        x-powered-by: RustyGW
+      remove_response_headers:
+        - server
+
+  # Aggregate test
+  - name: "aggregate_test"
+    path: "/api/dashboard"
+    destination: "http://127.0.0.1:9001"
+    aggregate:
+      - service: svc-a
+        path: "http://127.0.0.1:9001/data/users"
+        field: users
+        timeout: 3s
+      - service: svc-b
+        path: "http://127.0.0.1:9002/data/products"
+        field: products
+        timeout: 3s
+
+  # WebSocket test
+  - name: "ws_test"
+    path: "/api/ws"
+    destination: "http://127.0.0.1:9001"
+
+  # gRPC test route
+  - name: "grpc_test"
+    path: "/grpc/test"
+    destination: "http://127.0.0.1:9001"
+
+  # Simple proxy
+  - name: "simple"
+    path: "/api/simple"
+    destination: "http://127.0.0.1:9001/api/simple"
