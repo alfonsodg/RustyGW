@@ -18,6 +18,7 @@ use crate::{
         circuit_breaker::circuit_breaker::layer as circuit_breaker_layer,
         rate_limiter::rate_limit::layer as ratelimiter_layer,
         request_id::request_id::layer as request_id_layer,
+        tracing_ctx::layer as tracing_ctx_layer,
     },
     proxy::proxy_handler,
     aggregate::aggregate_handler,
@@ -44,6 +45,7 @@ pub fn create_app(state: Arc<AppState>) -> Result<Router, Error> {
         .route("/health", get(|| async { (StatusCode::OK, "OK") }))
         .merge(proxy_router)
         .merge(prometheus_router)
+        .layer(from_fn(tracing_ctx_layer))
         .with_state(state)
         .layer(ClientIpSource::ConnectInfo.into_extension());
 
