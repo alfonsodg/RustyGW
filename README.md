@@ -2,7 +2,7 @@
 
 A high-performance, lightweight API Gateway built in Rust. Perfect for microservices, serverless architectures, and modern cloud-native applications.
 
-> **Note**: This project is a fork and enhancement of [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway) by [@Ketankhunti](https://github.com/Ketankhunti). We've added significant improvements including WebSocket support, enhanced security, Docker Swarm compatibility, and a complete demo application.
+> **Note**: This project is a fork and enhancement of [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway) by [@Ketankhunti](https://github.com/Ketankhunti). We've added significant improvements including WebSocket support in demo services, enhanced security, Docker Swarm compatibility, and a complete demo application.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.92+-orange.svg)](https://www.rust-lang.org)
@@ -18,7 +18,7 @@ A high-performance, lightweight API Gateway built in Rust. Perfect for microserv
 - **🔄 Hot Reload**: Zero-downtime configuration updates
 - **📊 Observability**: Prometheus metrics and health checks
 - **🐳 Cloud Ready**: Docker, Kubernetes, and container-native
-- **🌐 WebSocket Support**: Real-time bidirectional communication
+- **🌐 WebSocket Support**: Real-time bidirectional communication (demo services)
 - **🛡️ Circuit Breaker**: Fault tolerance and resilience patterns
 - **💾 Caching**: Intelligent response caching with TTL
 - **📝 Request ID**: Distributed tracing support
@@ -333,7 +333,7 @@ spec:
 
 ### Health Check
 - **URL**: `http://localhost:8094/health`
-- **Response**: `{"status": "healthy"}`
+- **Response**: `OK` (plain text, HTTP 200)
 
 ### Prometheus Config
 ```yaml
@@ -348,7 +348,7 @@ scrape_configs:
 ## 🧪 Demo Application
 
 The repository includes a complete demo with:
-- **Frontend**: Real-time WebSocket dashboard
+- **Frontend**: Real-time WebSocket dashboard (connects to backend services)
 - **3 Backend Services**: Users, Products, Orders
 - **Gateway**: Unified API access point
 - **Docker Compose**: One-command deployment
