@@ -73,12 +73,17 @@ pub async fn run(config_path: PathBuf) -> Result<()> {
 
     let health_checker = Arc::new(features::health_check::HealthChecker::new());
 
-    let http_client = Client::builder()
-        .connect_timeout(std::time::Duration::from_secs(5))
-        .timeout(std::time::Duration::from_secs(30))
-        .pool_idle_timeout(std::time::Duration::from_secs(90))
-        .build()
-        .expect("Failed to build HTTP client");
+    let http_client = {
+        let cfg = config.read().await;
+        let pool = &cfg.server.pool;
+        Client::builder()
+            .connect_timeout(features::health_check::parse_duration(&pool.connect_timeout))
+            .timeout(features::health_check::parse_duration(&pool.request_timeout))
+            .pool_idle_timeout(features::health_check::parse_duration(&pool.idle_timeout))
+            .pool_max_idle_per_host(pool.max_idle_per_host)
+            .build()
+            .expect("Failed to build HTTP client")
+    };
 
     // Collect health check targets from routes
     {

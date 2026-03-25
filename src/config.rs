@@ -15,6 +15,36 @@ pub struct GatewayConfig {
 #[derive(Debug, Deserialize)]
 pub struct ServerConfig {
     pub addr: String,
+    #[serde(default)]
+    pub pool: PoolConfig,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct PoolConfig {
+    #[serde(default = "default_pool_idle_timeout")]
+    pub idle_timeout: String,
+    #[serde(default = "default_pool_max_idle")]
+    pub max_idle_per_host: usize,
+    #[serde(default = "default_connect_timeout")]
+    pub connect_timeout: String,
+    #[serde(default = "default_request_timeout")]
+    pub request_timeout: String,
+}
+
+fn default_pool_idle_timeout() -> String { "90s".to_string() }
+fn default_pool_max_idle() -> usize { 32 }
+fn default_connect_timeout() -> String { "5s".to_string() }
+fn default_request_timeout() -> String { "30s".to_string() }
+
+impl Default for PoolConfig {
+    fn default() -> Self {
+        Self {
+            idle_timeout: default_pool_idle_timeout(),
+            max_idle_per_host: default_pool_max_idle(),
+            connect_timeout: default_connect_timeout(),
+            request_timeout: default_request_timeout(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
