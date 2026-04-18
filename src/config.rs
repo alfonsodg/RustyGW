@@ -25,6 +25,8 @@ pub struct GatewayConfig {
     pub cors: CorsConfig,
     #[serde(default)]
     pub include: Vec<String>,
+    #[serde(skip)]
+    route_tree: Option<matchit::Router<usize>>,
 }
 
 // ==================== Service Abstraction (#61) ====================
@@ -281,6 +283,9 @@ impl GatewayConfig {
         // #64: Validate
         config.validate()?;
 
+        // Build route matching tree
+        config.build_route_tree();
+
         Ok(config)
     }
 
@@ -388,11 +393,44 @@ impl GatewayConfig {
     }
 
     pub fn find_route_for_path(&self, request_path: &str) -> Option<Arc<RouteConfig>> {
+        if let Some(ref tree) = self.route_tree {
+            if let std::result::Result::Ok(matched) = tree.at(request_path) {
+                return Some(self.routes[*matched.value].clone());
+            }
+        }
+        // Fallback to prefix matching for catch-all routes like "/"
         self.routes
             .iter()
-            .filter(|r| request_path.starts_with(&r.path))
+            .filter(|r| request_path.starts_with(&r.path) && !r.path.contains('{'))
             .max_by_key(|r| r.path.len())
             .cloned()
+    }
+
+    /// Match a path and return captured parameters for proxy substitution
+    pub fn match_route_with_params(&self, request_path: &str) -> Option<(Arc<RouteConfig>, Vec<(String, String)>)> {
+        if let Some(ref tree) = self.route_tree {
+            if let std::result::Result::Ok(matched) = tree.at(request_path) {
+                let params: Vec<(String, String)> = matched.params.iter()
+                    .map(|(_k, _v)| (_k.to_string(), _v.to_string()))
+                    .collect();
+                return Some((self.routes[*matched.value].clone(), params));
+            }
+        }
+        // Fallback: no params
+        self.find_route_for_path(request_path).map(|r| (r, vec![]))
+    }
+
+    fn build_route_tree(&mut self) {
+        let mut router = matchit::Router::new();
+        for (i, route) in self.routes.iter().enumerate() {
+            // Convert {param} to :param for matchit syntax
+            let pattern = route.path.replace('{', ":").replace('}', "");
+            if let Err(e) = router.insert(&pattern, i) {
+                tracing::warn!(route = %route.name, path = %route.path, "Failed to add route to tree: {}", e);
+                continue;
+            }
+        }
+        self.route_tree = Some(router);
     }
 
     /// Public wrappers for testing

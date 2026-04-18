@@ -26,14 +26,16 @@ pub async fn proxy_handler(
     info!("Received request for path: {}", request_path);
 
     let config_guard = state.config.read().await;
-    let matched_route = config_guard.find_route_for_path(&request_path);
+    let matched = config_guard.match_route_with_params(&request_path);
 
-    let route = match matched_route {
-        Some(route) => route,
+    let (route, params) = match matched {
+        Some((route, params)) => (route, params),
         None => return Err(AppError::RouteNotFound),
     };
 
-    let destination_path = request_path.strip_prefix(&route.path).unwrap_or("");
+    let destination_path = request_path.strip_prefix(&route.path).unwrap_or(&request_path);
+    // For parameterized routes, use the full request path as remainder is empty
+    let destination_path = if params.is_empty() { destination_path } else { "" };
 
     let destinations = route.all_destinations();
     let healthy = state.health_checker.filter_healthy(&destinations);
@@ -51,7 +53,13 @@ pub async fn proxy_handler(
         .map(|rewrite| rewrite.replace("{path}", destination_path))
         .unwrap_or_else(|| destination_path.to_string());
 
-    let destination_url = format!("{}{}", healthy[idx], final_path);
+    let destination_url = {
+        let mut url = format!("{}{}", healthy[idx], final_path);
+        for (key, value) in &params {
+            url = url.replace(&format!("{{{}}}", key), value);
+        }
+        url
+    };
 
     let route_timeout = route.timeout.as_ref()
         .map(|t| crate::features::health_check::parse_duration(t));
