@@ -54,3 +54,4 @@ tmp/
 .cache/
 *.tmp
 *.bak
+todo.json

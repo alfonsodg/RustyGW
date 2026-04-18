@@ -257,7 +257,7 @@ curl -H "x-service-name: order-service" http://gateway:8094/api/payments
 | Binary Size | 9.8MB |
 | Memory | ~10MB footprint |
 
-See [PERFORMANCE.md](PERFORMANCE.md) for detailed wrk benchmark results.
+See [PERFORMANCE.md](docs/PERFORMANCE.md) for detailed wrk benchmark results.
 
 ---
 
