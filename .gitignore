@@ -1,11 +1,56 @@
+# Build artifacts
 /target
+
+# Environment & secrets
 .env
+.env.*
+!.env.example
+REMOTE.md
+api_keys.yaml
+api_keys*.yaml
+!api_keys.example.yaml
 
 # Agent configs
 AGENTS.md
 .github/copilot-instructions.md
+.github/copilot*.md
+.copilot/
+.kiro/
+.cursor/
+.aider*
+.continue/
+.cline/
+.roo/
+.windsurf/
+.augment*
+codex.md
+claude.md
+CLAUDE.md
+.claude/
+
+# Reference docs
+reference/
+
+# Debug & screenshots
+debug/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
 # Local test scripts
 stress_test.sh
 test_websocket.py
 todo
+
+# Logs & temp
+*.log
+tmp/
+.cache/
+*.tmp
+*.bak

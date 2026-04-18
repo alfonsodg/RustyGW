@@ -1,9 +1,0 @@
-keys:
-  "user-key-for-alice":
-    user_id: "alice@example.com"
-    roles: ["user"]
-    status: "active"
-  "admin-key-for-carol":
-    user_id: "carol@example.com"
-    roles: ["admin", "user"]
-    status: "active"

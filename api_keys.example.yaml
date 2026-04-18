@@ -1,0 +1,11 @@
+# Copy to api_keys.yaml and replace with real values
+# NEVER commit api_keys.yaml — it is excluded by .gitignore
+keys:
+  "replace-with-your-api-key":
+    user_id: "user@example.com"
+    roles: ["user"]
+    status: "active"
+  "replace-with-admin-key":
+    user_id: "admin@example.com"
+    roles: ["admin", "user"]
+    status: "active"
