@@ -148,11 +148,7 @@ pub async fn run(config_path: PathBuf) -> Result<()> {
 
     let listener = TcpListener::bind(&addr).await?;
     info!("Gateway listening on {}", &addr);
-    axum::serve(
-        listener,
-        app.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .await?;
+    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await?;
 
     Ok(())
 }

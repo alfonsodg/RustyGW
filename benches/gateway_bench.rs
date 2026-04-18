@@ -17,9 +17,7 @@ fn bench_hashmap_lookup(c: &mut Criterion) {
         b.iter(|| black_box(map.get("/api/v1/route500")))
     });
 
-    group.bench_function("hashmap_miss", |b| {
-        b.iter(|| black_box(map.get("/api/v1/nonexistent")))
-    });
+    group.bench_function("hashmap_miss", |b| b.iter(|| black_box(map.get("/api/v1/nonexistent"))));
 
     group.finish();
 }
@@ -83,9 +81,7 @@ fn bench_token_bucket(c: &mut Criterion) {
     let mut group = c.benchmark_group("rate_limiting");
     group.throughput(Throughput::Elements(1));
 
-    group.bench_function("token_acquire", |b| {
-        b.iter(|| black_box(bucket.try_acquire()))
-    });
+    group.bench_function("token_acquire", |b| b.iter(|| black_box(bucket.try_acquire())));
 
     group.finish();
 }

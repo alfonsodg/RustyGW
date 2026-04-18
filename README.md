@@ -1,8 +1,13 @@
 # RustyGW
 
-A high-performance internal API Gateway for microservices. Designed for backend-to-frontend (BTF) and backend-to-backend (BTB) communication within a service stack.
+A high-performance internal API Gateway for microservices.
+Designed for BTF and BTB communication within a service stack.
 
-> Built upon [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway) by [@Ketankhunti](https://github.com/Ketankhunti), extended with load balancing, WebSocket/gRPC proxy, API composition, health checks, distributed tracing, and production-grade resilience.
+> Built upon [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway)
+> by [@Ketankhunti](https://github.com/Ketankhunti),
+> extended with load balancing, WebSocket/gRPC proxy,
+> API composition, health checks, distributed tracing,
+> and production-grade resilience.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.92+-orange.svg)](https://www.rust-lang.org)
@@ -13,29 +18,34 @@ A high-performance internal API Gateway for microservices. Designed for backend-
 ## Features
 
 ### Proxy
+
 - **HTTP Proxy** with path-based routing
 - **WebSocket Proxy** (`/ws/`) for real-time BTF communication
 - **gRPC Proxy** (`/grpc/`) with HTTP/2 transparent forwarding
 - **API Composition** (`/agg/`) — fan-out 1 request to N backends, merge responses
 
 ### Resilience
+
 - **Load Balancing** — round-robin, random across multiple destinations
 - **Active Health Checks** — periodic probes, auto-remove/recover backends
 - **Retry + Timeout** — per-route retry count, backoff, status codes, timeout
 - **Circuit Breaker** — fault tolerance with configurable thresholds
 
 ### Transformation
+
 - **Path Rewriting** — rewrite request paths with `{path}` placeholder
 - **Header Injection/Removal** — add or remove request and response headers
 - **Response Compression** — automatic gzip
 
 ### Observability
+
 - **Prometheus Metrics** — request count, latency histograms, error rates
 - **W3C Distributed Tracing** — auto-generate and propagate `traceparent`
 - **Structured Access Logs** — method, path, status, duration_ms per request
 - **Health Endpoint** — `GET /health` returns `OK`
 
 ### Security
+
 - **JWT + API Key Authentication** with RBAC
 - **Rate Limiting** — per-IP (BTF) or per-service via `x-service-name` header (BTB)
 - **CORS** — configurable origins, methods, headers
@@ -43,6 +53,7 @@ A high-performance internal API Gateway for microservices. Designed for backend-
 - **Body Size Limits** — configurable max request body
 
 ### Operations
+
 - **Service Abstraction** — define services once, reference in routes
 - **Global Defaults** — timeout, retry, load_balance applied to all routes
 - **Environment Variables** — `${VAR}` interpolation in YAML config
@@ -191,7 +202,7 @@ routes:
 
 Frontend calls RustyGW as its single entry point:
 
-```
+```text
 Browser → RustyGW:8094 → Backend services
 ```
 
@@ -201,7 +212,7 @@ Key features: API composition, CORS, WebSocket proxy, gzip compression, rate lim
 # 1 call = data from 3 services
 curl http://gateway:8094/agg/api/dashboard
 # → {"user": {...}, "orders": [...], "notifications": [...]}
-
+```bash
 # WebSocket through gateway
 wscat -c ws://gateway:8094/ws/api/live
 ```
@@ -210,7 +221,7 @@ wscat -c ws://gateway:8094/ws/api/live
 
 Services call RustyGW instead of calling each other directly:
 
-```
+```text
 Service A → RustyGW:8094 → Service B (with LB, retry, health checks)
 ```
 
@@ -226,7 +237,7 @@ curl -H "x-service-name: order-service" http://gateway:8094/api/payments
 ## Endpoints
 
 | Path | Protocol | Description |
-|------|----------|-------------|
+| ------ | ---------- | ------------- |
 | `/{path}` | HTTP | Standard proxy with auth/rate-limit middleware |
 | `/ws/{path}` | WebSocket | Bidirectional WebSocket proxy |
 | `/agg/{path}` | HTTP | API composition (fan-out + merge) |
@@ -239,7 +250,7 @@ curl -H "x-service-name: order-service" http://gateway:8094/api/payments
 ## Performance
 
 | Metric | Value |
-|--------|-------|
+| -------- | ------- |
 | Throughput | 20,000+ req/sec |
 | Avg Latency | 4.59ms (100 connections) |
 | Max Latency | 41.64ms under load |
@@ -262,14 +273,16 @@ docker service scale rustygw_gateway=3
 
 ### Architecture with Traefik
 
-```
+```text
 Internet → Traefik (TLS/edge) → Services
                                     ↓
                           Service A → RustyGW → Service B (BTB)
                           Frontend  → RustyGW → Backends  (BTF)
 ```
 
-RustyGW sits behind Traefik inside the Swarm overlay network. Traefik handles external TLS, RustyGW handles internal routing, load balancing, and resilience.
+RustyGW sits behind Traefik inside the Swarm overlay network.
+Traefik handles external TLS, RustyGW handles internal routing,
+load balancing, and resilience.
 
 ---
 
@@ -287,7 +300,11 @@ cargo watch -x run   # Hot reload dev
 
 ## Acknowledgments
 
-Built upon [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway) by [@Ketankhunti](https://github.com/Ketankhunti). Extended with load balancing, WebSocket/gRPC proxy, API composition, health checks, distributed tracing, CORS, compression, and production-grade resilience patterns.
+Built upon [Rust-API-Gateway](https://github.com/Ketankhunti/Rust-API-Gateway)
+by [@Ketankhunti](https://github.com/Ketankhunti).
+Extended with load balancing, WebSocket/gRPC proxy, API composition,
+health checks, distributed tracing, CORS, compression,
+and production-grade resilience patterns.
 
 ## License
 

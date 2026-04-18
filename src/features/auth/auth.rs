@@ -37,9 +37,7 @@ fn extract_bearer_token(headers: &HeaderMap) -> Result<&str, AppError> {
         .and_then(|value| value.to_str().ok())
         .ok_or(AppError::MissingAuthToken)?;
 
-    auth_header
-        .strip_prefix("Bearer ")
-        .ok_or(AppError::InvalidAuthHeader)
+    auth_header.strip_prefix("Bearer ").ok_or(AppError::InvalidAuthHeader)
 }
 
 pub fn check_roles(user_roles: &[String], required_roles: &[String]) -> Result<(), AppError> {

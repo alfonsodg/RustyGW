@@ -21,14 +21,14 @@
     +-- main.rs           Entry point
     +-- lib.rs             App builder and HTTP client setup
     +-- app.rs             Axum router and middleware stack
-    +-- config.rs          YAML config loading, validation, route tree
-    +-- errors.rs          AppError enum and IntoResponse impl
+    +-- config.rs          Config loading, validation, route tree
+    +-- errors.rs          AppError enum and IntoResponse
     +-- proxy.rs           HTTP reverse proxy handler
     +-- ws_proxy.rs        WebSocket proxy handler
     +-- grpc_proxy.rs      gRPC transparent proxy (HTTP/2)
     +-- aggregate.rs       Multi-service response aggregation
     +-- state.rs           Shared application state
-    +-- features/          Core features (auth, circuit breaker, health, LB, rate limit)
+    +-- features/          Core features (auth, CB, health, LB)
     +-- middleware/         Axum middleware layers
     +-- utils/             Hot reload, metrics, config path helpers
     +-- plugins/           Plugin system (experimental)

@@ -38,11 +38,7 @@ impl PluginRegistry {
             .collect()
     }
 
-    pub async fn get_plugins_for_route(
-        &self,
-        route_path: &str,
-        phase: PluginPhase,
-    ) -> Vec<BoxedPlugin> {
+    pub async fn get_plugins_for_route(&self, route_path: &str, phase: PluginPhase) -> Vec<BoxedPlugin> {
         self.plugins
             .read()
             .await

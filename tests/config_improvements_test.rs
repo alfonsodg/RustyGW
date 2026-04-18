@@ -2,16 +2,19 @@ use rustway::config::GatewayConfig;
 
 fn parse_config(yaml: &str) -> GatewayConfig {
     let interpolated = rustway::config::interpolate_env_vars_pub(yaml);
-    serde_yaml::from_str(&interpolated).map(|mut cfg: GatewayConfig| {
-        cfg.resolve_services_pub();
-        cfg.apply_defaults_pub();
-        cfg
-    }).unwrap()
+    serde_yaml::from_str(&interpolated)
+        .map(|mut cfg: GatewayConfig| {
+            cfg.resolve_services_pub();
+            cfg.apply_defaults_pub();
+            cfg
+        })
+        .unwrap()
 }
 
 #[test]
 fn test_service_abstraction_resolves_urls() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 services:
@@ -26,7 +29,8 @@ routes:
     service: users
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     let route = &cfg.routes[0];
     assert_eq!(route.destinations, vec!["http://users-1:8091", "http://users-2:8091"]);
     assert_eq!(route.timeout.as_ref().unwrap(), "5s");
@@ -35,7 +39,8 @@ identity:
 
 #[test]
 fn test_service_single_url() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 services:
@@ -47,13 +52,15 @@ routes:
     service: payments
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert_eq!(cfg.routes[0].destination, "http://payments:8080");
 }
 
 #[test]
 fn test_route_overrides_service() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 services:
@@ -67,14 +74,16 @@ routes:
     timeout: 10s
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     // Route timeout should override service timeout
     assert_eq!(cfg.routes[0].timeout.as_ref().unwrap(), "10s");
 }
 
 #[test]
 fn test_global_defaults_applied() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 defaults:
@@ -88,14 +97,16 @@ routes:
     destination: http://localhost:8080
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert_eq!(cfg.routes[0].timeout.as_ref().unwrap(), "3s");
     assert_eq!(cfg.routes[0].retry.as_ref().unwrap().count, 1);
 }
 
 #[test]
 fn test_route_overrides_defaults() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 defaults:
@@ -107,33 +118,42 @@ routes:
     timeout: 15s
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert_eq!(cfg.routes[0].timeout.as_ref().unwrap(), "15s");
 }
 
 #[test]
 fn test_env_var_interpolation() {
-    unsafe { std::env::set_var("TEST_GW_PORT", "9999"); }
-    let cfg = parse_config(r#"
+    unsafe {
+        std::env::set_var("TEST_GW_PORT", "9999");
+    }
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:${TEST_GW_PORT}"
 routes: []
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert_eq!(cfg.server.addr, "0.0.0.0:9999");
-    unsafe { std::env::remove_var("TEST_GW_PORT"); }
+    unsafe {
+        std::env::remove_var("TEST_GW_PORT");
+    }
 }
 
 #[test]
 fn test_env_var_missing_keeps_placeholder() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:${NONEXISTENT_VAR_XYZ}"
 routes: []
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert_eq!(cfg.server.addr, "0.0.0.0:${NONEXISTENT_VAR_XYZ}");
 }
 

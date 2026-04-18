@@ -14,11 +14,7 @@ use crate::{
     state::{AppState, CachedResponse},
 };
 
-pub async fn layer(
-    State(state): State<Arc<AppState>>,
-    req: Request<Body>,
-    next: Next,
-) -> Result<Response, AppError> {
+pub async fn layer(State(state): State<Arc<AppState>>, req: Request<Body>, next: Next) -> Result<Response, AppError> {
     let config_guard = state.config.read().await;
 
     let route = config_guard.find_route_for_path(req.uri().path());

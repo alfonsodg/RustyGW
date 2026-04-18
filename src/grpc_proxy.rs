@@ -69,9 +69,7 @@ pub async fn grpc_proxy_handler(
         }
     };
 
-    let client = Client::builder(TokioExecutor::new())
-        .http2_only(true)
-        .build_http();
+    let client = Client::builder(TokioExecutor::new()).http2_only(true).build_http();
 
     match client.request(request).await {
         Ok(resp) => {
@@ -87,7 +85,9 @@ pub async fn grpc_proxy_handler(
             for (key, value) in parts.headers.iter() {
                 response = response.header(key, value);
             }
-            response.body(Body::from(bytes)).unwrap_or_else(|_| Response::new(Body::empty()))
+            response
+                .body(Body::from(bytes))
+                .unwrap_or_else(|_| Response::new(Body::empty()))
         }
         Err(e) => {
             error!(destination = %dest_url, "gRPC proxy error: {}", e);

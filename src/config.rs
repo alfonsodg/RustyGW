@@ -78,11 +78,21 @@ pub struct PoolConfig {
     pub body_limit: String,
 }
 
-fn default_pool_idle_timeout() -> String { "90s".to_string() }
-fn default_pool_max_idle() -> usize { 32 }
-fn default_connect_timeout() -> String { "5s".to_string() }
-fn default_request_timeout() -> String { "30s".to_string() }
-fn default_body_limit() -> String { "10mb".to_string() }
+fn default_pool_idle_timeout() -> String {
+    "90s".to_string()
+}
+fn default_pool_max_idle() -> usize {
+    32
+}
+fn default_connect_timeout() -> String {
+    "5s".to_string()
+}
+fn default_request_timeout() -> String {
+    "30s".to_string()
+}
+fn default_body_limit() -> String {
+    "10mb".to_string()
+}
 
 impl Default for PoolConfig {
     fn default() -> Self {
@@ -110,8 +120,19 @@ pub struct CorsConfig {
     pub enabled: bool,
 }
 
-fn default_cors_origins() -> Vec<String> { vec!["*".to_string()] }
-fn default_cors_methods() -> Vec<String> { vec!["GET".into(), "POST".into(), "PUT".into(), "DELETE".into(), "PATCH".into(), "OPTIONS".into()] }
+fn default_cors_origins() -> Vec<String> {
+    vec!["*".to_string()]
+}
+fn default_cors_methods() -> Vec<String> {
+    vec![
+        "GET".into(),
+        "POST".into(),
+        "PUT".into(),
+        "DELETE".into(),
+        "PATCH".into(),
+        "OPTIONS".into(),
+    ]
+}
 
 // ==================== Identity ====================
 
@@ -175,8 +196,12 @@ pub struct RetryConfig {
     pub backoff: String,
 }
 
-fn default_retries() -> u32 { 2 }
-fn default_backoff() -> String { "100ms".to_string() }
+fn default_retries() -> u32 {
+    2
+}
+fn default_backoff() -> String {
+    "100ms".to_string()
+}
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct TransformConfig {
@@ -296,34 +321,34 @@ impl GatewayConfig {
             if let Some(svc_name) = &route.service
                 && let Some(svc) = services.get(svc_name)
             {
-                    let route_mut = Arc::make_mut(route);
-                    // Set destinations from service
-                    if route_mut.destinations.is_empty() && route_mut.destination.is_empty() {
-                        if !svc.urls.is_empty() {
-                            route_mut.destinations = svc.urls.clone();
-                        } else if let Some(url) = &svc.url {
-                            route_mut.destination = url.clone();
-                        }
+                let route_mut = Arc::make_mut(route);
+                // Set destinations from service
+                if route_mut.destinations.is_empty() && route_mut.destination.is_empty() {
+                    if !svc.urls.is_empty() {
+                        route_mut.destinations = svc.urls.clone();
+                    } else if let Some(url) = &svc.url {
+                        route_mut.destination = url.clone();
                     }
-                    // Inherit service config if not set on route
-                    if route_mut.health_check.is_none() {
-                        route_mut.health_check = svc.health_check.clone();
-                    }
-                    if route_mut.retry.is_none() {
-                        route_mut.retry = svc.retry.clone();
-                    }
-                    if route_mut.timeout.is_none() {
-                        route_mut.timeout = svc.timeout.clone();
-                    }
-                    if !route_mut.tls_skip_verify {
-                        route_mut.tls_skip_verify = svc.tls_skip_verify;
-                    }
-                    if matches!(route_mut.load_balance, LoadBalanceStrategy::RoundRobin) {
-                        route_mut.load_balance = svc.load_balance.clone();
-                    }
+                }
+                // Inherit service config if not set on route
+                if route_mut.health_check.is_none() {
+                    route_mut.health_check = svc.health_check.clone();
+                }
+                if route_mut.retry.is_none() {
+                    route_mut.retry = svc.retry.clone();
+                }
+                if route_mut.timeout.is_none() {
+                    route_mut.timeout = svc.timeout.clone();
+                }
+                if !route_mut.tls_skip_verify {
+                    route_mut.tls_skip_verify = svc.tls_skip_verify;
+                }
+                if matches!(route_mut.load_balance, LoadBalanceStrategy::RoundRobin) {
+                    route_mut.load_balance = svc.load_balance.clone();
                 }
             }
         }
+    }
 
     /// #62: Apply global defaults to routes missing config
     fn apply_defaults(&mut self) {
@@ -388,15 +413,18 @@ impl GatewayConfig {
         if errors.is_empty() {
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Config validation errors:\n  - {}", errors.join("\n  - ")))
+            Err(anyhow::anyhow!(
+                "Config validation errors:\n  - {}",
+                errors.join("\n  - ")
+            ))
         }
     }
 
     pub fn find_route_for_path(&self, request_path: &str) -> Option<Arc<RouteConfig>> {
-        if let Some(ref tree) = self.route_tree {
-            if let std::result::Result::Ok(matched) = tree.at(request_path) {
-                return Some(self.routes[*matched.value].clone());
-            }
+        if let Some(ref tree) = self.route_tree
+            && let std::result::Result::Ok(matched) = tree.at(request_path)
+        {
+            return Some(self.routes[*matched.value].clone());
         }
         // Fallback to prefix matching for catch-all routes like "/"
         self.routes
@@ -407,14 +435,17 @@ impl GatewayConfig {
     }
 
     /// Match a path and return captured parameters for proxy substitution
+    #[allow(clippy::type_complexity)]
     pub fn match_route_with_params(&self, request_path: &str) -> Option<(Arc<RouteConfig>, Vec<(String, String)>)> {
-        if let Some(ref tree) = self.route_tree {
-            if let std::result::Result::Ok(matched) = tree.at(request_path) {
-                let params: Vec<(String, String)> = matched.params.iter()
-                    .map(|(_k, _v)| (_k.to_string(), _v.to_string()))
-                    .collect();
-                return Some((self.routes[*matched.value].clone(), params));
-            }
+        if let Some(ref tree) = self.route_tree
+            && let std::result::Result::Ok(matched) = tree.at(request_path)
+        {
+            let params: Vec<(String, String)> = matched
+                .params
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect();
+            return Some((self.routes[*matched.value].clone(), params));
         }
         // Fallback: no params
         self.find_route_for_path(request_path).map(|r| (r, vec![]))
@@ -432,10 +463,18 @@ impl GatewayConfig {
     }
 
     /// Public wrappers for testing
-    pub fn resolve_services_pub(&mut self) { self.resolve_services(); }
-    pub fn apply_defaults_pub(&mut self) { self.apply_defaults(); }
-    pub fn validate_pub(&self) -> Result<(), anyhow::Error> { self.validate() }
-    pub fn build_route_tree_pub(&mut self) { self.build_route_tree(); }
+    pub fn resolve_services_pub(&mut self) {
+        self.resolve_services();
+    }
+    pub fn apply_defaults_pub(&mut self) {
+        self.apply_defaults();
+    }
+    pub fn validate_pub(&self) -> Result<(), anyhow::Error> {
+        self.validate()
+    }
+    pub fn build_route_tree_pub(&mut self) {
+        self.build_route_tree();
+    }
 }
 
 /// Public wrapper for env var interpolation (for testing)
@@ -447,13 +486,14 @@ pub fn interpolate_env_vars_pub(content: &str) -> String {
 
 fn interpolate_env_vars(content: &str) -> String {
     use std::sync::LazyLock;
-    static ENV_RE: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"\$\{([^}]+)\}").expect("Invalid env var regex — this is a compile-time bug")
-    });
-    ENV_RE.replace_all(content, |caps: &regex::Captures| {
-        let var_name = &caps[1];
-        std::env::var(var_name).unwrap_or_else(|_| format!("${{{}}}", var_name))
-    }).to_string()
+    static ENV_RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"\$\{([^}]+)\}").expect("Invalid env var regex — this is a compile-time bug"));
+    ENV_RE
+        .replace_all(content, |caps: &regex::Captures| {
+            let var_name = &caps[1];
+            std::env::var(var_name).unwrap_or_else(|_| format!("${{{}}}", var_name))
+        })
+        .to_string()
 }
 
 // ==================== Include Merging (#65) ====================
@@ -487,7 +527,9 @@ pub struct ApiKeyDetails {
     pub status: String,
 }
 
-fn default_status() -> String { "active".to_string() }
+fn default_status() -> String {
+    "active".to_string()
+}
 
 impl ApiKeyStore {
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, anyhow::Error> {
