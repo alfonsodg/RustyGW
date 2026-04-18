@@ -37,7 +37,13 @@ pub async fn proxy_handler(
 
     let destinations = route.all_destinations();
     let healthy = state.health_checker.filter_healthy(&destinations);
-    let idx = state.load_balancer.next_index(healthy.len(), &route.load_balance);
+    let idx = match state.load_balancer.next_index(healthy.len(), &route.load_balance) {
+        Some(idx) => idx,
+        None => {
+            tracing::warn!(route = %route.name, "No healthy backends available");
+            return Err(AppError::ServiceUnavailable);
+        }
+    };
 
     // Apply path rewrite if configured
     let final_path = route.transform.as_ref()

@@ -3,29 +3,36 @@ use rustway::features::load_balancer::{LoadBalanceStrategy, LoadBalancer};
 #[test]
 fn test_round_robin_distribution() {
     let lb = LoadBalancer::new();
-    let results: Vec<usize> = (0..6).map(|_| lb.next_index(3, &LoadBalanceStrategy::RoundRobin)).collect();
+    let results: Vec<usize> = (0..6).map(|_| lb.next_index(3, &LoadBalanceStrategy::RoundRobin).unwrap()).collect();
     assert_eq!(results, vec![0, 1, 2, 0, 1, 2]);
 }
 
 #[test]
 fn test_round_robin_two_backends() {
     let lb = LoadBalancer::new();
-    let results: Vec<usize> = (0..4).map(|_| lb.next_index(2, &LoadBalanceStrategy::RoundRobin)).collect();
+    let results: Vec<usize> = (0..4).map(|_| lb.next_index(2, &LoadBalanceStrategy::RoundRobin).unwrap()).collect();
     assert_eq!(results, vec![0, 1, 0, 1]);
 }
 
 #[test]
 fn test_round_robin_single_backend() {
     let lb = LoadBalancer::new();
-    let results: Vec<usize> = (0..5).map(|_| lb.next_index(1, &LoadBalanceStrategy::RoundRobin)).collect();
+    let results: Vec<usize> = (0..5).map(|_| lb.next_index(1, &LoadBalanceStrategy::RoundRobin).unwrap()).collect();
     assert_eq!(results, vec![0, 0, 0, 0, 0]);
+}
+
+#[test]
+fn test_zero_backends_returns_none() {
+    let lb = LoadBalancer::new();
+    assert!(lb.next_index(0, &LoadBalanceStrategy::RoundRobin).is_none());
+    assert!(lb.next_index(0, &LoadBalanceStrategy::Random).is_none());
 }
 
 #[test]
 fn test_random_strategy_in_bounds() {
     let lb = LoadBalancer::new();
     for _ in 0..100 {
-        let idx = lb.next_index(3, &LoadBalanceStrategy::Random);
+        let idx = lb.next_index(3, &LoadBalanceStrategy::Random).unwrap();
         assert!(idx < 3);
     }
 }
@@ -42,7 +49,7 @@ fn test_load_balancer_thread_safe() {
         let lb = lb.clone();
         handles.push(thread::spawn(move || {
             for _ in 0..1000 {
-                let idx = lb.next_index(3, &LoadBalanceStrategy::RoundRobin);
+                let idx = lb.next_index(3, &LoadBalanceStrategy::RoundRobin).unwrap();
                 assert!(idx < 3);
             }
         }));

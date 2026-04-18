@@ -21,8 +21,11 @@ impl LoadBalancer {
         }
     }
 
-    pub fn next_index(&self, count: usize, strategy: &LoadBalanceStrategy) -> usize {
-        match strategy {
+    pub fn next_index(&self, count: usize, strategy: &LoadBalanceStrategy) -> Option<usize> {
+        if count == 0 {
+            return None;
+        }
+        Some(match strategy {
             LoadBalanceStrategy::RoundRobin => {
                 self.counter.fetch_add(1, Ordering::Relaxed) % count
             }
@@ -34,7 +37,7 @@ impl LoadBalancer {
                 hasher.write_usize(self.counter.fetch_add(1, Ordering::Relaxed));
                 hasher.finish() as usize % count
             }
-        }
+        })
     }
 }
 
