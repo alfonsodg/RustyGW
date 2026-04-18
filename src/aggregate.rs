@@ -10,6 +10,14 @@ use tracing::{error, info};
 
 use crate::{features::health_check::parse_duration, state::AppState};
 
+fn json_response(status: StatusCode, body: impl Into<Body>) -> Response {
+    Response::builder()
+        .status(status)
+        .header("content-type", "application/json")
+        .body(body.into())
+        .unwrap_or_else(|_| Response::new(Body::empty()))
+}
+
 pub async fn aggregate_handler(
     State(state): State<Arc<AppState>>,
     Path(path): Path<String>,
@@ -20,14 +28,10 @@ pub async fn aggregate_handler(
         let config = state.config.read().await;
         match config.find_route_for_path(&request_path) {
             Some(route) if route.aggregate.is_some() => {
-                (route.aggregate.clone().unwrap(), route.name.clone())
+                // Safe: we just checked is_some()
+                (route.aggregate.clone().unwrap_or_default(), route.name.clone())
             }
-            _ => {
-                return Response::builder()
-                    .status(StatusCode::NOT_FOUND)
-                    .body(Body::from("No aggregate route found"))
-                    .unwrap();
-            }
+            _ => return json_response(StatusCode::NOT_FOUND, "No aggregate route found"),
         }
     };
 
@@ -47,16 +51,16 @@ pub async fn aggregate_handler(
         handles.push(tokio::spawn(async move {
             let result = client.get(&url).timeout(timeout).send().await;
             match result {
-                Ok(resp) if resp.status().is_success() => {
+                std::result::Result::Ok(resp) if resp.status().is_success() => {
                     let body = resp.text().await.unwrap_or_default();
                     let value: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
                     (field, value)
                 }
-                Ok(resp) => {
+                std::result::Result::Ok(resp) => {
                     error!(service = %field, status = %resp.status(), "Aggregate source failed");
                     (field, Value::Null)
                 }
-                Err(e) => {
+                std::result::Result::Err(e) => {
                     error!(service = %field, "Aggregate source error: {}", e);
                     (field, Value::Null)
                 }
@@ -66,16 +70,11 @@ pub async fn aggregate_handler(
 
     let mut merged = serde_json::Map::new();
     for handle in handles {
-        if let Ok((field, value)) = handle.await {
+        if let std::result::Result::Ok((field, value)) = handle.await {
             merged.insert(field, value);
         }
     }
 
     let body = serde_json::to_string(&Value::Object(merged)).unwrap_or_default();
-
-    Response::builder()
-        .status(StatusCode::OK)
-        .header("content-type", "application/json")
-        .body(Body::from(body))
-        .unwrap()
+    json_response(StatusCode::OK, body)
 }

@@ -40,10 +40,12 @@ pub async fn layer(
         if cached_response.inserted_at.elapsed() < ttl {
             info!(key = %cache_key, "Cache HIT");
             let mut builder = Response::builder().status(cached_response.status);
-            *builder.headers_mut().unwrap() = cached_response.headers.clone();
+            if let Some(headers) = builder.headers_mut() {
+                *headers = cached_response.headers.clone();
+            }
             return Ok(builder
                 .body(Body::from(cached_response.body.clone()))
-                .unwrap());
+                .unwrap_or_else(|_| Response::new(Body::empty())));
         } else {
             info!(key = %cache_key, "Cache STALE (expired)");
             state.cache.invalidate(&cache_key).await;

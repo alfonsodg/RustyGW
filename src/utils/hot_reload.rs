@@ -49,7 +49,7 @@ pub async fn watch_config_files(
                 && (event.kind.is_modify() || event.kind.is_create())
             {
                 tx.blocking_send(event)
-                    .expect("Failed to send file change event");
+                    .unwrap_or_else(|e| error!("Hot-reload channel closed: {}", e));
             }
         },
         notify::Config::default(),

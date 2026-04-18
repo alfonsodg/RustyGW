@@ -447,8 +447,11 @@ pub fn interpolate_env_vars_pub(content: &str) -> String {
 // ==================== Env Var Interpolation (#63) ====================
 
 fn interpolate_env_vars(content: &str) -> String {
-    let re = Regex::new(r"\$\{([^}]+)\}").unwrap();
-    re.replace_all(content, |caps: &regex::Captures| {
+    use std::sync::LazyLock;
+    static ENV_RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"\$\{([^}]+)\}").expect("Invalid env var regex — this is a compile-time bug")
+    });
+    ENV_RE.replace_all(content, |caps: &regex::Captures| {
         let var_name = &caps[1];
         std::env::var(var_name).unwrap_or_else(|_| format!("${{{}}}", var_name))
     }).to_string()
