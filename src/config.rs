@@ -423,9 +423,7 @@ impl GatewayConfig {
     fn build_route_tree(&mut self) {
         let mut router = matchit::Router::new();
         for (i, route) in self.routes.iter().enumerate() {
-            // Convert {param} to :param for matchit syntax
-            let pattern = route.path.replace('{', ":").replace('}', "");
-            if let Err(e) = router.insert(&pattern, i) {
+            if let std::result::Result::Err(e) = router.insert(&route.path, i) {
                 tracing::warn!(route = %route.name, path = %route.path, "Failed to add route to tree: {}", e);
                 continue;
             }
@@ -437,6 +435,7 @@ impl GatewayConfig {
     pub fn resolve_services_pub(&mut self) { self.resolve_services(); }
     pub fn apply_defaults_pub(&mut self) { self.apply_defaults(); }
     pub fn validate_pub(&self) -> Result<(), anyhow::Error> { self.validate() }
+    pub fn build_route_tree_pub(&mut self) { self.build_route_tree(); }
 }
 
 /// Public wrapper for env var interpolation (for testing)
