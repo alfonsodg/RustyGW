@@ -8,10 +8,8 @@ use std::{sync::Arc, time::Instant};
 use crate::{
     config::{ApiKeyStore, GatewayConfig, SecretsConfig},
     features::{
-        circuit_breaker::circuit_breaker::CircuitBreakerStore,
-        health_check::HealthChecker,
-        load_balancer::LoadBalancer,
-        rate_limiter::state::RateLimitState,
+        circuit_breaker::circuit_breaker::CircuitBreakerStore, health_check::HealthChecker,
+        load_balancer::LoadBalancer, rate_limiter::state::RateLimitState,
     },
     plugins::PluginRegistry,
 };

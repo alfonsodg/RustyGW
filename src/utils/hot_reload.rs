@@ -81,10 +81,7 @@ pub async fn watch_config_files(
                     info!("Successfully reloaded gateway_config.yaml");
                 }
                 Err(e) => {
-                    error!(
-                        "Failed to reload gateway_config.yaml: {}. Keeping old config.",
-                        e
-                    );
+                    error!("Failed to reload gateway_config.yaml: {}. Keeping old config.", e);
                 }
             }
         }

@@ -62,11 +62,7 @@ pub trait Plugin: Send + Sync {
         Ok((request, None))
     }
 
-    async fn on_response(
-        &self,
-        response: Response<Body>,
-        _ctx: &PluginContext,
-    ) -> PluginResult<Response<Body>> {
+    async fn on_response(&self, response: Response<Body>, _ctx: &PluginContext) -> PluginResult<Response<Body>> {
         Ok(response)
     }
 

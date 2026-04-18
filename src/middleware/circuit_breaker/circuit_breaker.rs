@@ -12,11 +12,7 @@ use crate::{
     middleware::rate_limiter::rate_limit::parse_duration, state::AppState,
 };
 
-pub async fn layer(
-    State(state): State<Arc<AppState>>,
-    req: Request,
-    next: Next,
-) -> Result<Response, AppError> {
+pub async fn layer(State(state): State<Arc<AppState>>, req: Request, next: Next) -> Result<Response, AppError> {
     let config_guard = state.config.read().await;
     let route = match config_guard.find_route_for_path(req.uri().path()) {
         Some(r) => r,
@@ -67,9 +63,7 @@ pub async fn layer(
             CircuitStateEnum::HalfOpen { .. } | CircuitStateEnum::Closed { .. } => {
                 // If a trial fails OR a normal request fails, we check the failure threshold.
                 let failures = match *final_state {
-                    CircuitStateEnum::Closed {
-                        consecutive_failures,
-                    } => consecutive_failures + 1,
+                    CircuitStateEnum::Closed { consecutive_failures } => consecutive_failures + 1,
                     _ => 1, // First failure in HalfOpen state
                 };
 
@@ -89,9 +83,7 @@ pub async fn layer(
     } else {
         // Request Succeded
         match *final_state {
-            CircuitStateEnum::HalfOpen {
-                consecutive_successes,
-            } => {
+            CircuitStateEnum::HalfOpen { consecutive_successes } => {
                 let new_successes = consecutive_successes + 1;
                 if new_successes >= cb_config.success_threshold {
                     // Success threshold reached, close the circuit.
@@ -107,9 +99,7 @@ pub async fn layer(
                     info!(route = %route.name, successes = new_successes, "Trial request succeeded, remaining HALF-OPEN");
                 }
             }
-            CircuitStateEnum::Closed {
-                consecutive_failures,
-            } => {
+            CircuitStateEnum::Closed { consecutive_failures } => {
                 if consecutive_failures > 0 {
                     // Reset failure count on success.
                     *final_state = CircuitStateEnum::Closed {

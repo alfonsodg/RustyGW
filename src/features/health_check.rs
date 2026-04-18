@@ -39,10 +39,7 @@ impl HealthChecker {
     }
 
     pub fn is_healthy(&self, url: &str) -> bool {
-        self.status
-            .get(url)
-            .map(|h| h.healthy)
-            .unwrap_or(true) // assume healthy if not checked yet
+        self.status.get(url).map(|h| h.healthy).unwrap_or(true) // assume healthy if not checked yet
     }
 
     pub fn filter_healthy<'a>(&self, destinations: &[&'a str]) -> Vec<&'a str> {

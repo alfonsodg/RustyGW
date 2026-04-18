@@ -26,9 +26,7 @@ impl LoadBalancer {
             return None;
         }
         Some(match strategy {
-            LoadBalanceStrategy::RoundRobin => {
-                self.counter.fetch_add(1, Ordering::Relaxed) % count
-            }
+            LoadBalanceStrategy::RoundRobin => self.counter.fetch_add(1, Ordering::Relaxed) % count,
             LoadBalanceStrategy::Random => {
                 use std::collections::hash_map::RandomState;
                 use std::hash::{BuildHasher, Hasher};

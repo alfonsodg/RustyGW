@@ -6,7 +6,8 @@ fn parse_config(yaml: &str) -> GatewayConfig {
 
 #[test]
 fn test_route_single_destination() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes:
@@ -15,14 +16,16 @@ routes:
     destination: http://localhost:8080
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     let route = &cfg.routes[0];
     assert_eq!(route.all_destinations(), vec!["http://localhost:8080"]);
 }
 
 #[test]
 fn test_route_multiple_destinations() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes:
@@ -34,7 +37,8 @@ routes:
       - http://svc2:8080
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     let route = &cfg.routes[0];
     let dests = route.all_destinations();
     assert_eq!(dests.len(), 2);
@@ -44,7 +48,8 @@ identity:
 
 #[test]
 fn test_route_load_balance_default() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes:
@@ -53,17 +58,19 @@ routes:
     destination: http://localhost:8080
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     // Default should be RoundRobin
     match cfg.routes[0].load_balance {
-        rustway::features::load_balancer::LoadBalanceStrategy::RoundRobin => {},
+        rustway::features::load_balancer::LoadBalanceStrategy::RoundRobin => {}
         _ => panic!("Expected RoundRobin default"),
     }
 }
 
 #[test]
 fn test_route_retry_config() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes:
@@ -76,7 +83,8 @@ routes:
       retry_on: [502, 503]
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     let retry = cfg.routes[0].retry.as_ref().unwrap();
     assert_eq!(retry.count, 3);
     assert_eq!(retry.backoff, "200ms");
@@ -85,7 +93,8 @@ identity:
 
 #[test]
 fn test_route_timeout_config() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes:
@@ -95,13 +104,15 @@ routes:
     timeout: 5s
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert_eq!(cfg.routes[0].timeout.as_ref().unwrap(), "5s");
 }
 
 #[test]
 fn test_route_transform_config() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes:
@@ -118,7 +129,8 @@ routes:
       remove_response_headers: [server]
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     let t = cfg.routes[0].transform.as_ref().unwrap();
     assert_eq!(t.rewrite_path.as_ref().unwrap(), "/v2{path}");
     assert_eq!(t.request_headers.get("x-custom").unwrap(), "value");
@@ -129,7 +141,8 @@ identity:
 
 #[test]
 fn test_route_health_check_config() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes:
@@ -141,7 +154,8 @@ routes:
       path: /healthz
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     let hc = cfg.routes[0].health_check.as_ref().unwrap();
     assert_eq!(hc.interval, "10s");
     assert_eq!(hc.path, "/healthz");
@@ -149,7 +163,8 @@ identity:
 
 #[test]
 fn test_route_tls_skip_verify() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes:
@@ -159,13 +174,15 @@ routes:
     tls_skip_verify: true
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert!(cfg.routes[0].tls_skip_verify);
 }
 
 #[test]
 fn test_route_aggregate_config() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes:
@@ -182,7 +199,8 @@ routes:
         field: orders
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     let agg = cfg.routes[0].aggregate.as_ref().unwrap();
     assert_eq!(agg.len(), 2);
     assert_eq!(agg[0].field, "user");
@@ -192,7 +210,8 @@ identity:
 
 #[test]
 fn test_cors_config() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes: []
@@ -202,7 +221,8 @@ cors:
   methods: [GET, POST]
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert!(cfg.cors.enabled);
     assert_eq!(cfg.cors.origins.len(), 2);
     assert_eq!(cfg.cors.methods, vec!["GET", "POST"]);
@@ -210,19 +230,22 @@ identity:
 
 #[test]
 fn test_cors_disabled_by_default() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes: []
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert!(!cfg.cors.enabled);
 }
 
 #[test]
 fn test_pool_config() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
   pool:
@@ -234,7 +257,8 @@ server:
 routes: []
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert_eq!(cfg.server.pool.idle_timeout, "120s");
     assert_eq!(cfg.server.pool.max_idle_per_host, 64);
     assert_eq!(cfg.server.pool.connect_timeout, "3s");
@@ -244,13 +268,15 @@ identity:
 
 #[test]
 fn test_pool_config_defaults() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes: []
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert_eq!(cfg.server.pool.idle_timeout, "90s");
     assert_eq!(cfg.server.pool.max_idle_per_host, 32);
     assert_eq!(cfg.server.pool.body_limit, "10mb");
@@ -258,7 +284,8 @@ identity:
 
 #[test]
 fn test_find_route_longest_match() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes:
@@ -270,14 +297,16 @@ routes:
     destination: http://users:8080
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     let route = cfg.find_route_for_path("/api/users/123").unwrap();
     assert_eq!(route.name, "specific");
 }
 
 #[test]
 fn test_find_route_no_match() {
-    let cfg = parse_config(r#"
+    let cfg = parse_config(
+        r#"
 server:
   addr: "0.0.0.0:8094"
 routes:
@@ -286,6 +315,7 @@ routes:
     destination: http://localhost:8080
 identity:
   api_key_store_path: ./api_keys.yaml
-"#);
+"#,
+    );
     assert!(cfg.find_route_for_path("/other").is_none());
 }

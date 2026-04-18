@@ -3,21 +3,27 @@ use rustway::features::load_balancer::{LoadBalanceStrategy, LoadBalancer};
 #[test]
 fn test_round_robin_distribution() {
     let lb = LoadBalancer::new();
-    let results: Vec<usize> = (0..6).map(|_| lb.next_index(3, &LoadBalanceStrategy::RoundRobin).unwrap()).collect();
+    let results: Vec<usize> = (0..6)
+        .map(|_| lb.next_index(3, &LoadBalanceStrategy::RoundRobin).unwrap())
+        .collect();
     assert_eq!(results, vec![0, 1, 2, 0, 1, 2]);
 }
 
 #[test]
 fn test_round_robin_two_backends() {
     let lb = LoadBalancer::new();
-    let results: Vec<usize> = (0..4).map(|_| lb.next_index(2, &LoadBalanceStrategy::RoundRobin).unwrap()).collect();
+    let results: Vec<usize> = (0..4)
+        .map(|_| lb.next_index(2, &LoadBalanceStrategy::RoundRobin).unwrap())
+        .collect();
     assert_eq!(results, vec![0, 1, 0, 1]);
 }
 
 #[test]
 fn test_round_robin_single_backend() {
     let lb = LoadBalancer::new();
-    let results: Vec<usize> = (0..5).map(|_| lb.next_index(1, &LoadBalanceStrategy::RoundRobin).unwrap()).collect();
+    let results: Vec<usize> = (0..5)
+        .map(|_| lb.next_index(1, &LoadBalanceStrategy::RoundRobin).unwrap())
+        .collect();
     assert_eq!(results, vec![0, 0, 0, 0, 0]);
 }
 

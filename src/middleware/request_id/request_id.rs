@@ -20,9 +20,10 @@ pub async fn layer(mut req: Request<Body>, next: Next) -> Response {
         Some(id) => id,
         None => {
             let new_id = Uuid::new_v4().to_string();
-            req.headers_mut()
-                .insert(REQUEST_ID_HEADER, HeaderValue::from_str(&new_id)
-                    .unwrap_or_else(|_| HeaderValue::from_static("unknown")));
+            req.headers_mut().insert(
+                REQUEST_ID_HEADER,
+                HeaderValue::from_str(&new_id).unwrap_or_else(|_| HeaderValue::from_static("unknown")),
+            );
             new_id
         }
     };

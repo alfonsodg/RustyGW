@@ -23,13 +23,13 @@ pub async fn layer(
     if let Some(route_config) = route
         && let Some(rate_limit_config) = route_config.rate_limit.as_ref()
     {
-        let period =
-            parse_duration(&rate_limit_config.period).unwrap_or_else(|_| Duration::from_secs(60));
+        let period = parse_duration(&rate_limit_config.period).unwrap_or_else(|_| Duration::from_secs(60));
         let capacity = rate_limit_config.requests;
         let refill_rate = rate_limit_config.requests as f64 / period.as_secs_f64();
 
         // Use x-service-name header if present (BTB), otherwise client IP (BTF)
-        let key = req.headers()
+        let key = req
+            .headers()
             .get("x-service-name")
             .and_then(|v| v.to_str().ok())
             .map(|s| format!("svc:{}", s))
@@ -50,9 +50,7 @@ pub async fn layer(
 pub fn parse_duration(s: &str) -> Result<Duration, &'static str> {
     let s = s.trim();
     let unit = s.chars().last().ok_or("Empty durtion")?;
-    let value: u64 = s[..s.len() - 1]
-        .parse()
-        .map_err(|_| "Invalid number in duration")?;
+    let value: u64 = s[..s.len() - 1].parse().map_err(|_| "Invalid number in duration")?;
 
     match unit {
         's' => Ok(Duration::from_secs(value)),

@@ -48,7 +48,9 @@ pub async fn proxy_handler(
     };
 
     // Apply path rewrite if configured
-    let final_path = route.transform.as_ref()
+    let final_path = route
+        .transform
+        .as_ref()
         .and_then(|t| t.rewrite_path.as_ref())
         .map(|rewrite| rewrite.replace("{path}", destination_path))
         .unwrap_or_else(|| destination_path.to_string());
@@ -61,7 +63,9 @@ pub async fn proxy_handler(
         url
     };
 
-    let route_timeout = route.timeout.as_ref()
+    let route_timeout = route
+        .timeout
+        .as_ref()
         .map(|t| crate::features::health_check::parse_duration(t));
 
     info!(destination = %destination_url, strategy = ?route.load_balance, "Forwarding request to backend");
@@ -73,15 +77,18 @@ pub async fn proxy_handler(
         }
         for (key, value) in &transform.request_headers {
             if let Ok(v) = HeaderValue::from_str(value) {
-                headers.insert(http::header::HeaderName::from_bytes(key.as_bytes()).unwrap_or(http::header::HeaderName::from_static("x-invalid")), v);
+                headers.insert(
+                    http::header::HeaderName::from_bytes(key.as_bytes())
+                        .unwrap_or(http::header::HeaderName::from_static("x-invalid")),
+                    v,
+                );
             }
         }
     }
 
     headers.insert(
         REQUEST_ID_HEADER,
-        HeaderValue::from_str(&request_id)
-            .unwrap_or_else(|_| HeaderValue::from_static("unknown")),
+        HeaderValue::from_str(&request_id).unwrap_or_else(|_| HeaderValue::from_static("unknown")),
     );
 
     let body_bytes: Bytes = body
@@ -94,10 +101,20 @@ pub async fn proxy_handler(
         .to_bytes();
 
     let max_attempts = route.retry.as_ref().map(|r| r.count + 1).unwrap_or(1);
-    let retry_on: Vec<u16> = route.retry.as_ref()
-        .map(|r| if r.retry_on.is_empty() { vec![502, 503, 504] } else { r.retry_on.clone() })
+    let retry_on: Vec<u16> = route
+        .retry
+        .as_ref()
+        .map(|r| {
+            if r.retry_on.is_empty() {
+                vec![502, 503, 504]
+            } else {
+                r.retry_on.clone()
+            }
+        })
         .unwrap_or_default();
-    let backoff = route.retry.as_ref()
+    let backoff = route
+        .retry
+        .as_ref()
         .map(|r| crate::features::health_check::parse_duration(&r.backoff))
         .unwrap_or(std::time::Duration::from_millis(100));
 
@@ -139,12 +156,10 @@ pub async fn proxy_handler(
                 for (name, value) in resp_headers.iter() {
                     response_builder = response_builder.header(name, value);
                 }
-                let mut response = response_builder.body(body)
-                    .map_err(|_| AppError::InternalServerError)?;
+                let mut response = response_builder.body(body).map_err(|_| AppError::InternalServerError)?;
                 response.headers_mut().insert(
                     REQUEST_ID_HEADER,
-                    HeaderValue::from_str(&request_id)
-                        .unwrap_or_else(|_| HeaderValue::from_static("unknown")),
+                    HeaderValue::from_str(&request_id).unwrap_or_else(|_| HeaderValue::from_static("unknown")),
                 );
                 // Apply response header transformations
                 if let Some(transform) = &route.transform {
@@ -152,7 +167,10 @@ pub async fn proxy_handler(
                         response.headers_mut().remove(key.as_str());
                     }
                     for (key, value) in &transform.response_headers {
-                        if let (Ok(k), Ok(v)) = (http::header::HeaderName::from_bytes(key.as_bytes()), HeaderValue::from_str(value)) {
+                        if let (Ok(k), Ok(v)) = (
+                            http::header::HeaderName::from_bytes(key.as_bytes()),
+                            HeaderValue::from_str(value),
+                        ) {
                             response.headers_mut().insert(k, v);
                         }
                     }

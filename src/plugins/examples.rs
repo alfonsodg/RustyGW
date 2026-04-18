@@ -25,11 +25,7 @@ impl Plugin for HeaderInjectorPlugin {
         PluginPhase::PostProxy
     }
 
-    async fn on_response(
-        &self,
-        mut response: Response<Body>,
-        _ctx: &PluginContext,
-    ) -> PluginResult<Response<Body>> {
+    async fn on_response(&self, mut response: Response<Body>, _ctx: &PluginContext) -> PluginResult<Response<Body>> {
         for (key, value) in &self.headers {
             if let Ok(hv) = HeaderValue::from_str(value)
                 && let Ok(hn) = http::header::HeaderName::try_from(key.as_str())

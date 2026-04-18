@@ -18,10 +18,7 @@ fn json_response(status: StatusCode, body: impl Into<Body>) -> Response {
         .unwrap_or_else(|_| Response::new(Body::empty()))
 }
 
-pub async fn aggregate_handler(
-    State(state): State<Arc<AppState>>,
-    Path(path): Path<String>,
-) -> Response {
+pub async fn aggregate_handler(State(state): State<Arc<AppState>>, Path(path): Path<String>) -> Response {
     let request_path = format!("/{}", path);
 
     let (sources, route_name) = {

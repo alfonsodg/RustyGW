@@ -16,11 +16,7 @@ use crate::{
 };
 
 // axum middleware layer for authentication
-pub async fn layer(
-    State(state): State<Arc<AppState>>,
-    mut req: Request,
-    next: Next,
-) -> Result<Response, AppError> {
+pub async fn layer(State(state): State<Arc<AppState>>, mut req: Request, next: Next) -> Result<Response, AppError> {
     let route = find_route_for_uri(req.uri(), state.clone()).await?;
 
     if let Some(auth_config) = &route.auth {
