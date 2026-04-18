@@ -3,14 +3,14 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'rustway-gateway'
+  - job_name: 'rustygw'
     static_configs:
-      - targets: ['localhost:8081']
+      - targets: ['localhost:8094']
     metrics_path: '/metrics'
     scrape_interval: 5s
-    
-  - job_name: 'rustway-gateway-docker'
+
+  - job_name: 'rustygw-docker'
     static_configs:
-      - targets: ['rustway:8081']
+      - targets: ['gateway:8094']
     metrics_path: '/metrics'
     scrape_interval: 5s
